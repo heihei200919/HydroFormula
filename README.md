@@ -29,7 +29,7 @@ It helps students, engineers, and educators quickly understand and apply core fo
 ## 🚀 Getting Started
 
 ### Online Demo
-Download the single HTML file (`水利公式计算器_修订版.html`) and open it with any modern browser (Chrome / Edge / Firefox recommended).
+Download the single HTML file (`index.html`) and open it with any modern browser (Chrome / Edge / Firefox recommended).
 
 ### How to Use
 1. Select a scenario from the dropdown list (e.g., “Irrigation Channel Design”).
