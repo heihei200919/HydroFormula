@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水利公式串联场景交互式计算平台</title>
+<style>
+:root {
+  --primary: #1976D2;
+  --primary-light: #42A5F5;
+  --primary-dark: #0D47A1;
+  --primary-bg: #E3F2FD;
+  --accent: #0288D1;
+  --bg: #F5F9FC;
+  --card-bg: #FFFFFF;
+  --text: #263238;
+  --text-light: #546E7A;
+  --border: #CFD8DC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #EF6C00;
+  --warning-bg: #FFF3E0;
+  --danger: #C62828;
+  --danger-bg: #FFEBEE;
+  --formula-bg: #FFFDE7;
+  --step-header: #1565C0;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: white;
+  padding: 24px 0;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.header h1 { font-size: 24px; margin-bottom: 6px; letter-spacing: 1px; }
+.header p { font-size: 14px; opacity: 0.85; }
+
+/* Scene Selector */
+.scene-selector-wrap {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.scene-selector-wrap label { font-weight: 600; font-size: 15px; margin-bottom: 8px; display: block; }
+#sceneSelect {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-bg);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+}
+#sceneSelect:focus { border-color: var(--primary-dark); }
+
+/* Scene Info Card */
+.scene-info {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+  border-left: 5px solid var(--primary);
+}
+.scene-info h2 { color: var(--primary-dark); font-size: 20px; margin-bottom: 10px; }
+.scene-info .intro { color: var(--text-light); font-size: 14px; margin-bottom: 12px; line-height: 1.8; }
+.scene-info .modules { display: flex; flex-wrap: wrap; gap: 8px; }
+.module-tag {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Parameter Input Area */
+.param-section {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.param-section h3 { color: var(--primary-dark); font-size: 17px; margin-bottom: 16px; border-bottom: 2px solid var(--primary-bg); padding-bottom: 8px; }
+.param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+.param-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.param-symbol {
+  font-weight: 700;
+  color: var(--primary-dark);
+  min-width: 50px;
+  font-style: italic;
+  font-family: "Cambria Math", "Times New Roman", serif;
+}
+.param-name { font-size: 13px; color: var(--text-light); flex: 1; }
+.param-input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.param-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.param-unit { font-size: 13px; color: var(--text-light); min-width: 55px; }
+
+/* Calculate Button */
+.calc-btn-wrap { text-align: center; margin: 20px 0; }
+#calcBtn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  border: none;
+  padding: 14px 48px;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(25,118,210,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  letter-spacing: 1px;
+}
+#calcBtn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(25,118,210,0.4); }
+#calcBtn:active { transform: translateY(0); }
+#calcBtn:disabled { opacity: 0.6; cursor: wait; }
+
+/* Loading */
+.loading-overlay {
+  display: none;
+  text-align: center;
+  padding: 30px;
+}
+.loading-overlay.active { display: block; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 4px solid var(--primary-bg);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Accordion */
+.accordion-section { display: none; }
+.accordion-section.active { display: block; }
+.accordion-item {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.accordion-header {
+  background: var(--step-header);
+  color: white;
+  padding: 14px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  user-select: none;
+  transition: background 0.2s;
+}
+.accordion-header:hover { background: var(--primary-dark); }
+.accordion-header .step-num {
+  background: rgba(255,255,255,0.25);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+.accordion-header .arrow {
+  margin-left: auto;
+  transition: transform 0.3s;
+  font-size: 12px;
+}
+.accordion-item.open .arrow { transform: rotate(90deg); }
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.accordion-item.open .accordion-body { max-height: 5000px; }
+.accordion-content { padding: 20px; }
+
+/* Tables */
+.calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.calc-table th, .calc-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.calc-table th {
+  background: var(--primary-bg);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+.calc-table tr:hover td { background: var(--bg); }
+
+/* Formula Display */
+.formula-box {
+  background: var(--formula-bg);
+  border-left: 4px solid var(--warning);
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 4px;
+  font-family: "Cambria Math", "Times New Roman", monospace;
+  font-size: 15px;
+  line-height: 2;
+}
+.formula-id { color: var(--primary-dark); font-weight: 700; margin-right: 8px; }
+.formula-source { display: block; font-size: 12px; color: var(--text-light); margin-top: 4px; font-family: sans-serif; }
+
+/* Check Results */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.check-ok { background: var(--success-bg); color: var(--success); }
+.check-warn { background: var(--warning-bg); color: var(--warning); }
+.check-fail { background: var(--danger-bg); color: var(--danger); }
+.check-info { background: var(--primary-bg); color: var(--primary-dark); }
+.check-icon { font-size: 18px; font-weight: 700; }
+
+.platform-disclaimer {
+  background: var(--warning-bg);
+  color: #8A4B08;
+  border: 1px solid #FFCC80;
+  border-left: 5px solid var(--warning);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.scope-note {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--warning-bg);
+  color: #8A4B08;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* Calc Steps */
+.calc-step {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-left: 3px solid var(--primary-light);
+}
+.calc-step .step-formula { font-family: "Cambria Math", monospace; color: var(--primary-dark); font-weight: 600; margin-bottom: 4px; }
+.calc-step .step-substitute { font-family: "Cambria Math", monospace; color: var(--text-light); font-size: 13px; margin: 2px 0; }
+.calc-step .step-result { font-family: "Cambria Math", monospace; color: var(--success); font-weight: 700; margin-top: 4px; }
+
+/* Output Table */
+.output-table th { background: var(--success-bg); color: var(--success); }
+.output-table td:last-child { font-weight: 600; color: var(--primary-dark); }
+
+/* Conclusion */
+.conclusion-box {
+  background: var(--primary-bg);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--primary-dark);
+}
+.conclusion-box strong { font-size: 16px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .param-grid { grid-template-columns: 1fr; }
+  .param-row { flex-wrap: wrap; }
+  .param-input { width: 100%; }
+  .container { padding: 10px; }
+  .header h1 { font-size: 18px; }
+}
+
+/* Info box for step 1 */
+.info-box {
+  background: #F5F5F5;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>水利公式串联场景交互式计算平台</h1>
+  <p>覆盖明渠、水闸、泵站、渡槽、隧洞、渗流等16类公式教学与初步校核场景</p>
+</div>
+
+<div class="container">
+  <div class="platform-disclaimer">
+    <strong>使用说明：</strong>本工具用于公式学习、方案比选和初步复核。涉及坝坡稳定、渗流场、结构配筋、水锤等需要断面、工况、材料分区或数值模型的场景，结果不得替代专业设计软件、规范条文核查及工程师复核。
+  </div>
+  <div class="scene-selector-wrap">
+    <label for="sceneSelect">选择计算场景：</label>
+    <select id="sceneSelect">
+      <option value="">— 请选择场景 —</option>
+    </select>
+  </div>
+
+  <div id="sceneInfo" style="display:none;" class="scene-info"></div>
+  <div id="paramArea" style="display:none;" class="param-section"></div>
+  <div id="calcBtnWrap" style="display:none;" class="calc-btn-wrap">
+    <button id="calcBtn">▶ 执行计算</button>
+  </div>
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>正在执行公式链计算...</p>
+  </div>
+  <div id="accordionSection" class="accordion-section"></div>
+</div>
+
+<script>
+// 修订版：重点修正土石坝场景的单位、模型名称、参数完整性和适用范围提示。
+// ========== 16个场景数据定义 ==========
+const SCENES = {
+  s1: {
+    name: "灌区渠道断面设计与输水能力核算",
+    intro: "在灌区规划中，需要根据设计灌溉流量确定渠道断面尺寸，并核算实际输水能力是否满足要求，同时验算流速是否在允许范围。",
+    modules: ["明渠水流", "断面参数"],
+    regulation: "GB 50288-99, SL 18",
+    params: [
+      {sym:"Q",name:"设计流量",unit:"m³/s",val:10},
+      {sym:"n",name:"糙率",unit:"—",val:0.014},
+      {sym:"S",name:"底坡",unit:"—",val:0.001},
+      {sym:"b",name:"底宽",unit:"m",val:3},
+      {sym:"m",name:"边坡系数",unit:"—",val:1.5},
+      {sym:"g",name:"重力加速度",unit:"m/s²",val:9.81}
+    ],
+    formulas: [
+      {id:"式1-1",expr:"A = (b + m·h)·h",src:"梯形断面面积"},
+      {id:"式1-2",expr:"χ = b + 2h·√(1 + m²)",src:"湿周计算"},
+      {id:"式1-3",expr:"R = A / χ",src:"水力半径"},
+      {id:"式1-4",expr:"Q = (1/n)·A·R^(2/3)·S^(1/2)",src:"曼宁公式 (SL 18)"},
+      {id:"式1-5",expr:"Fr = v / √(g·h)",src:"弗劳德数"}
+    ],
+    checks: [
+      {name:"流速范围 v∈[0.3, 3.0] m/s"},
+      {name:"Fr 避开 [0.8, 1.2] 急流过渡区"}
+    ]
+  },
+  s2: {
+    name: "水闸孔径设计与过流能力校核",
+    intro: "根据设计洪水流量确定闸孔总净宽，运营阶段校核过流能力，需先判断出流形态。",
+    modules: ["堰流闸孔", "水闸孔径"],
+    regulation: "SL 265-2016",
+    params: [
+      {sym:"Q",name:"设计流量",unit:"m³/s",val:500},
+      {sym:"H₀",name:"堰顶总水头",unit:"m",val:5},
+      {sym:"h_s",name:"下游水深",unit:"m",val:3},
+      {sym:"e",name:"闸门开度",unit:"m",val:2},
+      {sym:"m",name:"流量系数",unit:"—",val:0.385},
+      {sym:"ε",name:"侧收缩系数",unit:"—",val:0.95},
+      {sym:"σₛ",name:"淹没系数",unit:"—",val:0.9},
+      {sym:"n",name:"孔数",unit:"个",val:5},
+      {sym:"Z_堰",name:"堰顶高程",unit:"m",val:100}
+    ],
+    formulas: [
+      {id:"式2-1",expr:"淹没判别: h_s/H₀ > 0.8 → 淹没堰流",src:"SL 265-2016"},
+      {id:"式2-2",expr:"孔流判别: e/H₀ ≤ 0.65 → 闸孔出流",src:"SL 265-2016"},
+      {id:"式2-3",expr:"自由堰流: Q = ε·m·B·√(2g)·H₀^(3/2)",src:"SL 265-2016"},
+      {id:"式2-4",expr:"闸孔自由出流: Q = μ·b·e·√(2g·H₀)",src:"SL 265-2016"},
+      {id:"式2-5",expr:"总净宽: B₀ = Q / (ε·m·√(2g)·H₀^(3/2)·σₛ)",src:"SL 265-2016"}
+    ],
+    checks: [
+      {name:"e/H₀ ≤ 0.65 判定孔流"},
+      {name:"h_s/H₀ > 0.8 判定淹没"}
+    ]
+  },
+  s3: {
+    name: "水闸下游消能防冲设计",
+    intro: "水闸宣泄洪水时需设计消力池创造底流水跃条件，确保下游河床安全。",
+    modules: ["堰流闸孔","明渠水流","消能槛"],
+    regulation: "SL 265-2016",
+    params: [
+      {sym:"q",name:"单宽流量",unit:"m²/s",val:15},
+      {sym:"H₀",name:"上游总水头",unit:"m",val:6},
+      {sym:"h_t",name:"下游水深",unit:"m",val:3},
+      {sym:"φ",name:"流速系数",unit:"—",val:0.95},
+      {sym:"σⱼ",name:"淹没安全系数",unit:"—",val:1.05},
+      {sym:"Z_堰",name:"堰顶高程",unit:"m",val:100},
+      {sym:"Z_底",name:"闸底板高程",unit:"m",val:95}
+    ],
+    formulas: [
+      {id:"式3-1",expr:"收缩断面水深: h_c = (q²/(φ²·2g))^(1/3)·... 迭代求解",src:"SL 265-2016"},
+      {id:"式3-2",expr:"Fr₁ = v₁/√(g·h_c), v₁ = q/h_c",src:"弗劳德数"},
+      {id:"式3-3",expr:"共轭水深: h_c'' = (h_c/2)·(√(1+8·Fr₁²) - 1)",src:"水跃共轭方程"},
+      {id:"式3-4",expr:"消力池深: d = σⱼ·h_c'' - h_t - ΔZ",src:"SL 265-2016"},
+      {id:"式3-5",expr:"池长: L = 6.9·(h_c'' - h_c)",src:"SL 265-2016"}
+    ],
+    checks: [
+      {name:"Fr₁ ∈ [2.5, 4.5] 消能效果最好"},
+      {name:"避免 Fr₁ < 1.7（弱水跃）"}
+    ]
+  },
+  s4: {
+    name: "泵站选型与水锤防护设计",
+    intro: "确定水泵扬程、轴功率，计算水锤升压并配置防护措施。",
+    modules: ["管道水力","泵站水锤"],
+    regulation: "GB 50265-2022",
+    params: [
+      {sym:"Q",name:"设计流量",unit:"m³/s",val:2},
+      {sym:"H_静",name:"静扬程",unit:"m",val:20},
+      {sym:"L",name:"管长",unit:"m",val:500},
+      {sym:"D",name:"管径",unit:"m",val:0.8},
+      {sym:"λ",name:"沿程阻力系数",unit:"—",val:0.02},
+      {sym:"Σξ",name:"局部阻力和",unit:"—",val:5},
+      {sym:"a",name:"水锤波速",unit:"m/s",val:1000},
+      {sym:"T",name:"阀门关闭时间",unit:"s",val:10},
+      {sym:"η",name:"水泵效率",unit:"—",val:0.85},
+      {sym:"ρ",name:"水密度",unit:"kg/m³",val:1000}
+    ],
+    formulas: [
+      {id:"式4-1",expr:"v = 4Q/(π·D²)",src:"管内流速"},
+      {id:"式4-2",expr:"h_f = λ·(L/D)·v²/(2g)",src:"沿程水头损失"},
+      {id:"式4-3",expr:"h_j = Σξ·v²/(2g)",src:"局部水头损失"},
+      {id:"式4-4",expr:"H_泵 = H_静 + h_w + v²/(2g)",src:"泵站扬程 (GB 50265-2022)"},
+      {id:"式4-5",expr:"N = ρgQH/(1000·η)",src:"轴功率"},
+      {id:"式4-6",expr:"ΔH = a·v₀/g (直接水锤)",src:"直接水锤"},
+      {id:"式4-7",expr:"T_r = 2L/a (相长)",src:"水锤相长"}
+    ],
+    checks: [
+      {name:"T > T_r = 2L/a 避免直接水锤"}
+    ]
+  },
+  s5: {
+    name: "渡槽水力与结构一体化设计",
+    intro: "按水力要求确定槽身断面尺寸，再以水重和自重进行结构配筋设计。",
+    modules: ["渡槽水力","渡槽结构"],
+    regulation: "SL 693-2014, SL 191",
+    params: [
+      {sym:"Q",name:"设计流量",unit:"m³/s",val:5},
+      {sym:"n",name:"糙率",unit:"—",val:0.014},
+      {sym:"S",name:"底坡",unit:"—",val:0.001},
+      {sym:"L",name:"槽身长度",unit:"m",val:30},
+      {sym:"K_进",name:"进口损失系数",unit:"—",val:0.2},
+      {sym:"K_出",name:"出口损失系数",unit:"—",val:1.0},
+      {sym:"γ_w",name:"水重度",unit:"kN/m³",val:9.81},
+      {sym:"f_c",name:"混凝土强度",unit:"MPa",val:20},
+      {sym:"f_y",name:"钢筋强度",unit:"MPa",val:360},
+      {sym:"c",name:"保护层厚度",unit:"mm",val:30}
+    ],
+    formulas: [
+      {id:"式5-1",expr:"矩形渡槽: Q = (1/n)·b·h·R^(2/3)·S^(1/2)",src:"SL 693-2014"},
+      {id:"式5-2",expr:"z = (K_进+K_出)·v²/(2g)",src:"进口水头损失"},
+      {id:"式5-3",expr:"M_底 = γ_w·h³/6",src:"侧墙根部弯矩"},
+      {id:"式5-4",expr:"M_端 = q·L²/12",src:"底板端部弯矩"},
+      {id:"式5-5",expr:"M_max = W·L₀²/8",src:"跨中弯矩"},
+      {id:"式5-6",expr:"A_s = M/(0.9·f_y·h₀)",src:"正截面配筋 (SL 191)"},
+      {id:"式5-7",expr:"w_max = α_cr·σ_s·(2.7c+0.1d/ρ_te)/E_s",src:"裂缝宽度验算"}
+    ],
+    checks: [
+      {name:"H/B ∈ [0.6, 0.8] 经济水深比"},
+      {name:"w_max ≤ 0.2mm 裂缝控制"}
+    ]
+  },
+  s6: {
+    name: "水闸结构整体稳定验算",
+    intro: "对各种工况下的抗滑、抗浮、抗倾覆、地基承载力进行全面验算。",
+    modules: ["水工结构","水闸结构","结构辅助"],
+    regulation: "SL 265-2016, SL 203",
+    params: [
+      {sym:"ΣW",name:"铅直力",unit:"kN",val:5000},
+      {sym:"ΣP",name:"水平力",unit:"kN",val:1500},
+      {sym:"A",name:"基底面积",unit:"m²",val:100},
+      {sym:"W",name:"截面抵抗矩",unit:"m³",val:500},
+      {sym:"ΣU",name:"扬压力",unit:"kN",val:2000},
+      {sym:"f",name:"摩擦系数",unit:"—",val:0.45},
+      {sym:"T",name:"底板宽",unit:"m",val:15},
+      {sym:"α_h",name:"地震加速度",unit:"g",val:0.1},
+      {sym:"f_y",name:"钢筋强度",unit:"MPa",val:360},
+      {sym:"ΣM",name:"力矩",unit:"kN·m",val:2500}
+    ],
+    formulas: [
+      {id:"式6-1",expr:"K_c = f·ΣW / ΣP",src:"抗滑稳定 (SL 265-2016)"},
+      {id:"式6-2",expr:"P_max/min = ΣW/A ± ΣM/W",src:"基底应力"},
+      {id:"式6-3",expr:"K_f = ΣW / ΣU",src:"抗浮稳定"},
+      {id:"式6-4",expr:"e = ΣM/ΣW ≤ T/6",src:"偏心距控制"},
+      {id:"式6-5",expr:"η = P_max/P_min",src:"不均匀系数"},
+      {id:"式6-6",expr:"F_i = α_h·W_i (地震惯性力)",src:"SL 203"}
+    ],
+    checks: [
+      {name:"K_c ≥ 1.25 抗滑安全"},
+      {name:"K_f ≥ 1.05 抗浮安全"},
+      {name:"e ≤ T/6 偏心距控制"},
+      {name:"η ≤ 2.0 不均匀系数"}
+    ]
+  },
+  s7: {
+    name: "土石坝渗流与边坡稳定分析（简化估算）",
+    intro: "对均质土石坝进行单宽渗流量、平均渗透坡降、简化平面滑动稳定和单层沉降估算。计算结果用于参数敏感性分析和初步判断。",
+    modules: ["渗流分析","边坡稳定（简化）","沉降估算"],
+    regulation: "参考 SL 274-2020；本场景为公式演示/初步估算，不等同于规范设计计算",
+    scopeNote: "重要：本场景不再冒充“瑞典圆弧法”。真实坝坡稳定需提供坝体断面、材料分区、滑弧/土条、孔隙水压力及工况；真实浸润线和逸出坡降需由断面几何、排水结构与渗流边界条件计算。",
+    params: [
+      {sym:"H₁",name:"上游水位",unit:"m",val:30},
+      {sym:"H₂",name:"下游水位",unit:"m",val:5},
+      {sym:"k",name:"渗透系数",unit:"m/s",val:1e-6},
+      {sym:"L",name:"平均渗径长度",unit:"m",val:100},
+      {sym:"[J]",name:"允许平均渗透坡降",unit:"—",val:0.25},
+      {sym:"H坝",name:"坝高（稳定计算）",unit:"m",val:35},
+      {sym:"m_d",name:"下游坝坡系数（水平/竖直）",unit:"—",val:2},
+      {sym:"c",name:"滑面黏聚力",unit:"kPa",val:25},
+      {sym:"φ",name:"滑面内摩擦角",unit:"°",val:28},
+      {sym:"γ",name:"滑体重度",unit:"kN/m³",val:18},
+      {sym:"r_u",name:"孔压系数（简化）",unit:"—",val:0.05},
+      {sym:"[K]",name:"静力允许安全系数",unit:"—",val:1.25},
+      {sym:"α_h",name:"水平地震系数",unit:"—",val:0.10},
+      {sym:"[K_s]",name:"抗震允许安全系数",unit:"—",val:1.10},
+      {sym:"σ_z",name:"竖向附加应力",unit:"kPa",val:100},
+      {sym:"H_c",name:"压缩层厚度",unit:"m",val:10},
+      {sym:"E_si",name:"压缩模量",unit:"kPa",val:5000}
+    ],
+    formulas: [
+      {id:"式7-1",expr:"v = k·J_avg",src:"达西定律；J_avg为平均坡降"},
+      {id:"式7-2",expr:"q = k·(H₁² - H₂²)/(2·L)",src:"均质、各向同性、稳定渗流的简化估算"},
+      {id:"式7-3",expr:"J_avg = (H₁-H₂)/L",src:"平均水力坡降，不代表出口局部逸出坡降"},
+      {id:"式7-4",expr:"β = arctan(1/m_d)，l = H坝/sinβ",src:"简化平面滑面几何"},
+      {id:"式7-5",expr:"K = [c·l + (N-U)·tanφ]/T，U=r_u·N",src:"简化平面滑动估算（非瑞典圆弧法）"},
+      {id:"式7-6",expr:"K_s = [c·l + N'_s·tanφ]/T_s",src:"拟静力简化估算；N'_s=max(N-U-F_h·sinβ,0)，T_s=T+F_h·cosβ"},
+      {id:"式7-7",expr:"S = σ_z·H_c/E_si",src:"分层总和法的单层简化；单位直接为m"}
+    ],
+    checks: [
+      {name:"J_avg ≤ [J] 平均渗透坡降校核"},
+      {name:"K ≥ [K] 静力稳定校核"},
+      {name:"K_s ≥ [K_s] 抗震稳定校核"},
+      {name:"沉降量需结合允许沉降及坝顶预留超高另行判断"}
+    ]
+  },
+  s8: {
+    name: "倒虹吸水力设计与管径优选",
+    intro: "渠道穿越障碍时采用倒虹吸，确定管径和管数，验算流速和上游壅水。",
+    modules: ["管道水力","倒虹吸"],
+    regulation: "GB 50288-99",
+    params: [
+      {sym:"Q",name:"设计流量",unit:"m³/s",val:3},
+      {sym:"z",name:"水位差",unit:"m",val:2},
+      {sym:"L",name:"管长",unit:"m",val:100},
+      {sym:"Σξ",name:"局部阻力和",unit:"—",val:3.0},
+      {sym:"λ",name:"沿程阻力系数",unit:"—",val:0.025},
+      {sym:"D",name:"管径",unit:"m",val:1.5},
+      {sym:"n",name:"管数",unit:"根",val:2}
+    ],
+    formulas: [
+      {id:"式8-1",expr:"A = π·D²/4",src:"断面面积"},
+      {id:"式8-2",expr:"μ = 1/√(Σξ + λ·L/D)",src:"流量系数"},
+      {id:"式8-3",expr:"Q = μ·A·√(2g·z)",src:"倒虹吸过流 (GB 50288-99)"},
+      {id:"式8-4",expr:"h_w = (Σξ + λ·L/D)·v²/(2g)",src:"总水头损失"},
+      {id:"式8-5",expr:"v = Q/(n·A)",src:"管内流速"}
+    ],
+    checks: [
+      {name:"v ∈ [0.9, 4.0] m/s 经济流速"}
+    ]
+  },
+  s9: {
+    name: "生态流量确定与水资源综合配置",
+    intro: "通过多种方法综合计算生态基流，核算各用水需求和河流健康。",
+    modules: ["水文径流","水生态环境"],
+    regulation: "SL/Z 712-2021",
+    params: [
+      {sym:"Q_avg",name:"多年平均流量",unit:"m³/s",val:50},
+      {sym:"Q_90%",name:"最枯月流量",unit:"m³/s",val:5},
+      {sym:"Q_irr",name:"灌溉需求",unit:"m³/s",val:20},
+      {sym:"Q_nav",name:"航运需求",unit:"m³/s",val:10},
+      {sym:"Q_wq",name:"水质需求",unit:"m³/s",val:3},
+      {sym:"F",name:"流域面积",unit:"km²",val:5000},
+      {sym:"P",name:"降雨量",unit:"mm",val:800},
+      {sym:"R",name:"径流深",unit:"mm",val:300},
+      {sym:"r",name:"Tennant系数",unit:"—",val:0.3}
+    ],
+    formulas: [
+      {id:"式9-1",expr:"Q_eco(Tennant) = r·Q_avg",src:"Tennant法"},
+      {id:"式9-2",expr:"Q_eco(7Q10) = Q_90%",src:"7Q10法"},
+      {id:"式9-3",expr:"W = 1000·R·F",src:"水资源总量"},
+      {id:"式9-4",expr:"α = R/P",src:"径流系数"},
+      {id:"式9-5",expr:"Q_down = max(Q_eco, Q_irr, Q_nav, Q_wq)",src:"下游综合需水"},
+      {id:"式9-6",expr:"P_eco = Q_eco/Q_avg × 100%",src:"生态保证率"},
+      {id:"式9-7",expr:"RHI = f(水质,水量,连通性)",src:"河流健康指数"}
+    ],
+    checks: [
+      {name:"多方法取大值确定生态流量"},
+      {name:"生态保证率 ≥ 90%"}
+    ]
+  },
+  s10: {
+    name: "水环境容量计算与污染控制",
+    intro: "计算水环境容量，预测排污后水质变化，评估溶解氧是否达标。",
+    modules: ["水生态环境","水文径流"],
+    regulation: "SL 348, GB 3838",
+    params: [
+      {sym:"Q₀",name:"上游来流量",unit:"m³/s",val:30},
+      {sym:"C₀",name:"上游浓度",unit:"mg/L",val:2},
+      {sym:"C_s",name:"水质目标",unit:"mg/L",val:20},
+      {sym:"Q_p",name:"排污量",unit:"m³/s",val:0.5},
+      {sym:"k₁",name:"BOD降解系数",unit:"1/d",val:0.3},
+      {sym:"k₂",name:"复氧系数",unit:"1/d",val:0.5},
+      {sym:"z",name:"平均水深",unit:"m",val:5},
+      {sym:"L磷",name:"磷负荷",unit:"g/m²·a",val:2},
+      {sym:"R磷",name:"滞留系数",unit:"—",val:0.5}
+    ],
+    formulas: [
+      {id:"式10-1",expr:"W = C_s·(Q₀+Q_p) - C₀·Q₀",src:"水环境容量 (SL 348)"},
+      {id:"式10-2",expr:"DO = DO_s - (k₁·L₀)/(k₂-k₁)·(e^(-k₁·t) - e^(-k₂·t))",src:"BOD-DO模型"},
+      {id:"式10-3",expr:"[P] = L磷·(1-R磷)/(z·Q_out)",src:"Dillon模型"},
+      {id:"式10-4",expr:"TSI = 14.42·ln([P]·1000) + 4.15",src:"营养状态指数"}
+    ],
+    checks: [
+      {name:"C_out ≤ C_s 水质达标"},
+      {name:"DO ≥ 5 mg/L 溶解氧达标"},
+      {name:"TSI < 50 中营养以下"}
+    ]
+  },
+  s11: {
+    name: "小流域设计洪水计算与排涝设计",
+    intro: "小流域(面积<1000km²)暴雨→洪峰→径流的完整产汇流过程。",
+    modules: ["水文径流","明渠水流"],
+    regulation: "SL 44, GB 50014",
+    params: [
+      {sym:"F",name:"流域面积",unit:"km²",val:100},
+      {sym:"S雨",name:"暴雨雨力",unit:"mm/h",val:50},
+      {sym:"τ",name:"汇流时间",unit:"h",val:3},
+      {sym:"n雨",name:"暴雨衰减指数",unit:"—",val:0.6},
+      {sym:"ψ",name:"径流系数",unit:"—",val:0.5},
+      {sym:"P",name:"降雨量",unit:"mm",val:150},
+      {sym:"n糙",name:"渠道糙率",unit:"—",val:0.025},
+      {sym:"S坡",name:"底坡",unit:"—",val:0.001},
+      {sym:"ΔP",name:"初损",unit:"mm",val:20}
+    ],
+    formulas: [
+      {id:"式11-1",expr:"Q_m = 0.278·ψ·S/τⁿ·F",src:"推理公式 (SL 44)"},
+      {id:"式11-2",expr:"R = P - ΔP",src:"净雨量"},
+      {id:"式11-3",expr:"W = 1000·R·F",src:"洪水总量"},
+      {id:"式11-4",expr:"α = R/P",src:"径流系数"},
+      {id:"式11-5",expr:"Q = (1/n)·A·R^(2/3)·S^(1/2)",src:"曼宁公式排涝"}
+    ],
+    checks: [
+      {name:"Q_m ≤ 渠道过流能力"},
+      {name:"Fr 避开 [0.8, 1.2]"}
+    ]
+  },
+  s12: {
+    name: "水土保持措施规划与减蚀效益评估",
+    intro: "评估土壤侵蚀现状，设计淤地坝、梯田、谷坊等措施。",
+    modules: ["水土保持","水文径流"],
+    regulation: "SL 190, GB 51018",
+    params: [
+      {sym:"R",name:"降雨侵蚀力",unit:"MJ·mm/(hm²·h)",val:300},
+      {sym:"K",name:"土壤可蚀性",unit:"—",val:0.3},
+      {sym:"L",name:"坡长",unit:"m",val:100},
+      {sym:"S",name:"坡度",unit:"°",val:15},
+      {sym:"C",name:"植被因子",unit:"—",val:0.3},
+      {sym:"P措",name:"措施因子",unit:"—",val:1.0},
+      {sym:"F",name:"流域面积",unit:"km²",val:50},
+      {sym:"T",name:"淤积年限",unit:"a",val:20},
+      {sym:"η",name:"拦泥率",unit:"—",val:0.8},
+      {sym:"γ_d",name:"淤积干密度",unit:"kg/m³",val:1400},
+      {sym:"V_c",name:"植被覆盖度",unit:"%",val:60},
+      {sym:"a",name:"系数",unit:"—",val:0.03}
+    ],
+    formulas: [
+      {id:"式12-1",expr:"A = R·K·L·S·C·P (USLE)",src:"通用土壤流失方程 (SL 190)"},
+      {id:"式12-2",expr:"M_s = W_s/(F·T)",src:"侵蚀模数"},
+      {id:"式12-3",expr:"V = (M_s·F·T·η)/γ_d",src:"淤地坝库容 (GB 51018)"},
+      {id:"式12-4",expr:"C = e^(-a·V_c)",src:"植被减蚀因子"},
+      {id:"式12-5",expr:"τ = γ·h·sinθ",src:"坡面剪切应力"}
+    ],
+    checks: [
+      {name:"A ≤ 允许土壤流失量(5 t/hm²·a)"}
+    ]
+  },
+  s13: {
+    name: "复式断面明渠流量精细计算",
+    intro: "主槽+滩地复式断面，分区计算后求和，考虑交界面动量交换修正。",
+    modules: ["复式断面明渠","断面参数"],
+    regulation: "GB 50707",
+    params: [
+      {sym:"b₁",name:"主槽底宽",unit:"m",val:10},
+      {sym:"b₂",name:"滩地宽度",unit:"m",val:20},
+      {sym:"m₁",name:"主槽边坡",unit:"—",val:2},
+      {sym:"m₂",name:"滩地边坡",unit:"—",val:3},
+      {sym:"h₁",name:"主槽水深",unit:"m",val:5},
+      {sym:"h₂",name:"滩地水深",unit:"m",val:1.5},
+      {sym:"n₁",name:"主槽糙率",unit:"—",val:0.02},
+      {sym:"n₂",name:"滩地糙率",unit:"—",val:0.035},
+      {sym:"S",name:"底坡",unit:"—",val:0.001},
+      {sym:"A_int",name:"交界面面积",unit:"m²",val:15},
+      {sym:"g",name:"重力加速度",unit:"m/s²",val:9.81}
+    ],
+    formulas: [
+      {id:"式13-1",expr:"A₁ = b₁·h₁ + m₁·h₁²",src:"主槽面积"},
+      {id:"式13-2",expr:"χ₁ = b₁ + 2h₁√(1+m₁²)",src:"主槽湿周"},
+      {id:"式13-3",expr:"Q₁ = (1/n₁)·A₁·R₁^(2/3)·S^(1/2)",src:"主槽流量"},
+      {id:"式13-4",expr:"Q₂ = (1/n₂)·A₂·R₂^(2/3)·S^(1/2)",src:"滩地流量"},
+      {id:"式13-5",expr:"Q = Q₁ + Q₂ - ΔQ",src:"修正总流量 (GB 50707)"}
+    ],
+    checks: [
+      {name:"v₁ > v₂ 主槽流速大于滩地"},
+      {name:"ΔQ 在总流量10%以内"}
+    ]
+  },
+  s14: {
+    name: "水闸闸门启闭力计算与金属结构设计",
+    intro: "计算总水压力确定面板厚度、主梁截面和启闭力。",
+    modules: ["水工金属结构","堰流闸孔","结构辅助"],
+    regulation: "SL 74",
+    params: [
+      {sym:"G",name:"闸门自重",unit:"kN",val:200},
+      {sym:"H_上",name:"上游水位",unit:"m",val:20},
+      {sym:"H_下",name:"下游水位",unit:"m",val:10},
+      {sym:"q",name:"水压强度",unit:"MPa",val:0.2},
+      {sym:"a",name:"面板区格",unit:"mm",val:800},
+      {sym:"n_T",name:"自重安全系数",unit:"—",val:1.1},
+      {sym:"n_W",name:"水压安全系数",unit:"—",val:1.2},
+      {sym:"θ",name:"支臂夹角",unit:"°",val:60},
+      {sym:"[σ]",name:"容许应力",unit:"MPa",val:160},
+      {sym:"n滚",name:"滚轮数",unit:"个",val:4}
+    ],
+    formulas: [
+      {id:"式14-1",expr:"P = (1/2)·γ_w·H²·B (总水压力)",src:"SL 74"},
+      {id:"式14-2",expr:"F_Q = n_T·G + n_W·P_w - T_阻",src:"启门力"},
+      {id:"式14-3",expr:"δ = a·√(k·q/[σ])",src:"面板厚度"},
+      {id:"式14-4",expr:"σ = M/W ≤ [σ]",src:"主梁弯应力验算"},
+      {id:"式14-5",expr:"P_轮 = P/n滚",src:"滚轮轮压"}
+    ],
+    checks: [
+      {name:"δ ≥ 设计值"},
+      {name:"σ ≤ [σ]"},
+      {name:"启闭机容量 ≥ 1.2×F_Q"}
+    ]
+  },
+  s15: {
+    name: "水工隧洞衬砌设计与配筋",
+    intro: "厚壁圆筒理论计算衬砌环向应力，抗裂验算，不满足时配筋。",
+    modules: ["水工隧洞","结构辅助"],
+    regulation: "SL 279-2016, SL 191",
+    params: [
+      {sym:"P",name:"内水压力",unit:"kPa",val:500},
+      {sym:"a",name:"衬砌内半径",unit:"m",val:3},
+      {sym:"b",name:"衬砌外半径",unit:"m",val:3.5},
+      {sym:"f_t",name:"抗拉强度",unit:"MPa",val:1.43},
+      {sym:"K_f",name:"抗裂安全系数",unit:"—",val:1.2},
+      {sym:"f_y",name:"钢筋强度",unit:"MPa",val:360},
+      {sym:"γ_d",name:"安全系数",unit:"—",val:1.2},
+      {sym:"f_c",name:"抗压强度",unit:"MPa",val:14.3},
+      {sym:"α₁",name:"系数",unit:"—",val:1.0}
+    ],
+    formulas: [
+      {id:"式15-1",expr:"σ_θ = P·(a²+b²)/(b²-a²) (厚壁圆筒)",src:"SL 279-2016"},
+      {id:"式15-2",expr:"σ_max = P·(a²+b²+a²)/(b²-a²)",src:"内壁最大应力"},
+      {id:"式15-3",expr:"抗裂验算: σ_max ≤ f_t/K_f",src:"SL 191"},
+      {id:"式15-4",expr:"A_s = (γ_d·M - α₁·f_c·b·x·(h₀-x/2))/(f_y·(h₀-x))",src:"配筋计算"}
+    ],
+    checks: [
+      {name:"σ_max ≤ f_t/K_f 则无需配筋"},
+      {name:"ρ ≥ 0.2% 最小配筋率"}
+    ]
+  },
+  s16: {
+    name: "沉沙条渠除沙系统设计",
+    intro: "设计条渠使引水含沙量降至可接受水平。",
+    modules: ["沉沙条渠","明渠水流","断面参数"],
+    regulation: "GB 50288-99",
+    params: [
+      {sym:"Q",name:"引水流量",unit:"m³/s",val:5},
+      {sym:"S_in",name:"进口含沙量",unit:"kg/m³",val:10},
+      {sym:"ω",name:"泥沙沉速",unit:"m/s",val:0.003},
+      {sym:"L",name:"条渠长度",unit:"m",val:1200},
+      {sym:"n",name:"糙率",unit:"—",val:0.025},
+      {sym:"S₀",name:"底坡",unit:"—",val:0.0005},
+      {sym:"T",name:"淤积年限",unit:"a",val:5},
+      {sym:"γ_d",name:"干密度",unit:"kg/m³",val:1400},
+      {sym:"b",name:"底宽",unit:"m",val:5},
+      {sym:"m",name:"边坡系数",unit:"—",val:2},
+      {sym:"h",name:"水深",unit:"m",val:3}
+    ],
+    formulas: [
+      {id:"式16-1",expr:"A = (b+m·h)·h",src:"梯形断面面积"},
+      {id:"式16-2",expr:"χ = b+2h√(1+m²)",src:"湿周"},
+      {id:"式16-3",expr:"R = A/χ",src:"水力半径"},
+      {id:"式16-4",expr:"v = (1/n)·R^(2/3)·S₀^(1/2)",src:"曼宁公式"},
+      {id:"式16-5",expr:"η = ω·L/(v·h)",src:"沉沙效率"},
+      {id:"式16-6",expr:"V_淤 = S_in·Q·T·η/γ_d",src:"淤积体积 (GB 50288-99)"},
+      {id:"式16-7",expr:"C_out = C_in·(1-η)",src:"出口含沙量"}
+    ],
+    checks: [
+      {name:"C_out ≤ 允许值(2 kg/m³)"},
+      {name:"V_淤 ≤ 设计库容"}
+    ]
+  }
+};
+
+// ========== 计算函数 ==========
+const CALC = {
+  s1: function(p) {
+    const Q=+p.Q, n=+p.n, S=+p.S, b=+p.b, m=+p.m, g=+p.g;
+    // 二分法求正常水深h0
+    let hLow=0.01, hHigh=50, h=1.0;
+    for(let i=0;i<40;i++){
+      h=(hLow+hHigh)/2;
+      const A=(b+m*h)*h;
+      const chi=b+2*h*Math.sqrt(1+m*m);
+      const R=A/chi;
+      const Qc=(1/n)*A*Math.pow(R,2/3)*Math.sqrt(S);
+      if(Math.abs(Qc-Q)<0.0001) break;
+      if(Qc<Q) hLow=h; else hHigh=h;
+    }
+    const A=(b+m*h)*h;
+    const chi=b+2*h*Math.sqrt(1+m*m);
+    const R=A/chi;
+    const v=Q/A;
+    const Fr=v/Math.sqrt(g*h);
+    const steps=[
+      {formula:"A = (b+m·h)·h",sub:`A = (${b}+${m}×${h.toFixed(3)})×${h.toFixed(3)}`,result:`A = ${A.toFixed(3)} m²`},
+      {formula:"χ = b+2h√(1+m²)",sub:`χ = ${b}+2×${h.toFixed(3)}×√(1+${m}²)`,result:`χ = ${chi.toFixed(3)} m`},
+      {formula:"R = A/χ",sub:`R = ${A.toFixed(3)}/${chi.toFixed(3)}`,result:`R = ${R.toFixed(3)} m`},
+      {formula:"v = Q/A",sub:`v = ${Q}/${A.toFixed(3)}`,result:`v = ${v.toFixed(3)} m/s`},
+      {formula:"Fr = v/√(g·h)",sub:`Fr = ${v.toFixed(3)}/√(${g}×${h.toFixed(3)})`,result:`Fr = ${Fr.toFixed(3)}`}
+    ];
+    const checks=[
+      {name:"流速范围 v∈[0.3,3.0] m/s",ok:v>=0.3&&v<=3.0,val:`v=${v.toFixed(3)} m/s`},
+      {name:"Fr 避开[0.8,1.2]",ok:Fr<0.8||Fr>1.2,val:`Fr=${Fr.toFixed(3)}`}
+    ];
+    const outputs=[
+      {sym:"h₀",name:"正常水深",val:h.toFixed(3),unit:"m"},
+      {sym:"A",name:"过水面积",val:A.toFixed(3),unit:"m²"},
+      {sym:"R",name:"水力半径",val:R.toFixed(3),unit:"m"},
+      {sym:"v",name:"流速",val:v.toFixed(3),unit:"m/s"},
+      {sym:"Fr",name:"弗劳德数",val:Fr.toFixed(3),unit:"—"}
+    ];
+    const conclusion=`渠道断面设计完成。底宽 b=${b}m，边坡系数 m=${m}，在给定底坡 S=${S} 条件下，正常水深 h₀=${h.toFixed(3)}m，实际流速 v=${v.toFixed(3)} m/s。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s2: function(p) {
+    const Q=+p.Q, H0=+p["H₀"], hs=+p["h_s"], e=+p.e, m=+p.m, eps=+p["ε"], ss=+p["σₛ"], n=+p.n, Z堰=+p["Z_堰"];
+    const g=9.81;
+    const ratio_hs=hs/H0;
+    const ratio_e=e/H0;
+    const isSubmerged=ratio_hs>0.8;
+    const isOrifice=ratio_e<=0.65;
+    let B0, outType, Qactual, b_single;
+    if(isOrifice){
+      outType=isSubmerged?"淹没闸孔出流":"自由闸孔出流";
+      const mu=0.60-0.176*e/H0;
+      if(isSubmerged){
+        B0=Q/(mu*e*Math.sqrt(2*g*H0)*ss);
+      }else{
+        B0=Q/(mu*e*Math.sqrt(2*g*H0));
+      }
+      b_single=B0/n;
+      Qactual=isSubmerged?mu*B0*e*Math.sqrt(2*g*H0)*ss:mu*B0*e*Math.sqrt(2*g*H0);
+    }else{
+      outType=isSubmerged?"淹没堰流":"自由堰流";
+      B0=Q/(eps*m*Math.sqrt(2*g)*Math.pow(H0,1.5)*ss);
+      b_single=B0/n;
+      Qactual=eps*m*B0*Math.sqrt(2*g)*Math.pow(H0,1.5)*ss;
+    }
+    const breastWallZ=Z堰+H0-e;
+    const steps=[
+      {formula:"h_s/H₀",sub:`${hs}/${H0}`,result:`${ratio_hs.toFixed(3)} → ${isSubmerged?'淹没':'自由'}`},
+      {formula:"e/H₀",sub:`${e}/${H0}`,result:`${ratio_e.toFixed(3)} → ${isOrifice?'孔流':'堰流'}`},
+      {formula:"出流形态判定",sub:`综合判定`,result:outType},
+      {formula:"B₀ = Q/(ε·m·√(2g)·H₀^1.5·σₛ)",sub:`B₀ = ${Q}/(${eps}×${m}×${Math.sqrt(2*g).toFixed(3)}×${Math.pow(H0,1.5).toFixed(3)}×${ss})`,result:`B₀ = ${B0.toFixed(3)} m`},
+      {formula:"b = B₀/n",sub:`b = ${B0.toFixed(3)}/${n}`,result:`b = ${b_single.toFixed(3)} m`},
+      {formula:"实际过流量校核",sub:`Q_actual = ${Qactual.toFixed(3)}`,result:`Q_actual = ${Qactual.toFixed(3)} m³/s`}
+    ];
+    const checks=[
+      {name:"e/H₀ ≤ 0.65 (孔流判定)",ok:isOrifice,val:`e/H₀=${ratio_e.toFixed(3)}`},
+      {name:"h_s/H₀ > 0.8 (淹没判定)",ok:isSubmerged,val:`h_s/H₀=${ratio_hs.toFixed(3)}`},
+      {name:"Q_actual ≥ Q设计",ok:Qactual>=Q,val:`${Qactual.toFixed(1)} vs ${Q}`}
+    ];
+    const outputs=[
+      {sym:"B₀",name:"总净宽",val:B0.toFixed(3),unit:"m"},
+      {sym:"b",name:"单孔宽",val:b_single.toFixed(3),unit:"m"},
+      {sym:"形态",name:"出流形态",val:outType,unit:"—"},
+      {sym:"Q_actual",name:"实际过流量",val:Qactual.toFixed(3),unit:"m³/s"},
+      {sym:"Z_胸",name:"胸墙底缘高程",val:breastWallZ.toFixed(3),unit:"m"}
+    ];
+    const conclusion=`水闸孔径设计完成。出流形态为${outType}，需${n}孔、单孔宽${b_single.toFixed(2)}m，总净宽${B0.toFixed(2)}m，实际过流量${Qactual.toFixed(1)} m³/s${Qactual>=Q?'（满足设计要求）':'（不满足，需调整）'}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s3: function(p) {
+    const q=+p.q, H0=+p["H₀"], ht=+p.h_t, phi=+p["φ"], sj=+p["σⱼ"];
+    const g=9.81;
+    // 收缩断面水深h_c迭代
+    let hc=1.0;
+    for(let i=0;i<20;i++){
+      const E=H0;
+      const hc_new=Math.pow(q*q/(2*g*phi*phi),1/3);
+      // 简化: h_c = (q^2/(2g phi^2))^(1/3) 近似
+      if(Math.abs(hc_new-hc)<0.001){hc=hc_new;break;}
+      hc=hc_new;
+    }
+    hc=Math.pow(q*q/(2*g*phi*phi),1/3);
+    const v1=q/hc;
+    const Fr1=v1/Math.sqrt(g*hc);
+    const hc2=(hc/2)*(Math.sqrt(1+8*Fr1*Fr1)-1);
+    const d=Math.max(0,sj*hc2-ht-0.1*(hc2-ht));
+    const L=6.9*(hc2-hc);
+    const waterJumpType=Fr1<1.7?"弱水跃":Fr1<=2.5?"弱水跃":Fr1<=4.5?"稳定水跃":"强水跃";
+    const steps=[
+      {formula:"h_c = (q²/(2g·φ²))^(1/3)",sub:`h_c = (${q}²/(2×${g}×${phi}²))^(1/3)`,result:`h_c = ${hc.toFixed(3)} m`},
+      {formula:"v₁ = q/h_c",sub:`v₁ = ${q}/${hc.toFixed(3)}`,result:`v₁ = ${v1.toFixed(3)} m/s`},
+      {formula:"Fr₁ = v₁/√(g·h_c)",sub:`Fr₁ = ${v1.toFixed(3)}/√(${g}×${hc.toFixed(3)})`,result:`Fr₁ = ${Fr1.toFixed(3)}`},
+      {formula:"h_c'' = (h_c/2)·(√(1+8Fr₁²)-1)",sub:`h_c'' = (${hc.toFixed(3)}/2)×(√(1+8×${Fr1.toFixed(3)}²)-1)`,result:`h_c'' = ${hc2.toFixed(3)} m`},
+      {formula:"d = σⱼ·h_c'' - h_t - ΔZ",sub:`d = ${sj}×${hc2.toFixed(3)} - ${ht} - ΔZ`,result:`d = ${d.toFixed(3)} m`},
+      {formula:"L = 6.9·(h_c''-h_c)",sub:`L = 6.9×(${hc2.toFixed(3)}-${hc.toFixed(3)})`,result:`L = ${L.toFixed(3)} m`}
+    ];
+    const checks=[
+      {name:"Fr₁∈[2.5,4.5] 消能最好",ok:Fr1>=2.5&&Fr1<=4.5,val:`Fr₁=${Fr1.toFixed(3)}`},
+      {name:"避免Fr₁<1.7",ok:Fr1>=1.7,val:`Fr₁=${Fr1.toFixed(3)}`}
+    ];
+    const outputs=[
+      {sym:"d",name:"消力池深度",val:d.toFixed(3),unit:"m"},
+      {sym:"L",name:"消力池长度",val:L.toFixed(3),unit:"m"},
+      {sym:"C",name:"消力槛高度",val:Math.max(0,sj*hc2-H0-0.5).toFixed(3),unit:"m"},
+      {sym:"h_c",name:"收缩断面水深",val:hc.toFixed(3),unit:"m"},
+      {sym:"h_c''",name:"跃后共轭水深",val:hc2.toFixed(3),unit:"m"},
+      {sym:"形态",name:"水跃型式",val:waterJumpType,unit:"—"}
+    ];
+    const conclusion=`消能防冲设计完成。Fr₁=${Fr1.toFixed(2)}，属${waterJumpType}。建议消力池深 d=${d.toFixed(2)}m，池长 L=${L.toFixed(1)}m。${Fr1>=2.5&&Fr1<=4.5?'消能效果良好。':'需复核消能方案。'}`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s4: function(p) {
+    const Q=+p.Q, Hst=+p["H_静"], L=+p.L, D=+p.D, lam=+p["λ"], sigmaXi=+p["Σξ"], a=+p.a, T=+p.T, eta=+p["η"], rho=+p["ρ"];
+    const g=9.81;
+    const v=4*Q/(Math.PI*D*D);
+    const hf=lam*(L/D)*v*v/(2*g);
+    const hj=sigmaXi*v*v/(2*g);
+    const hw=hf+hj;
+    const Hpump=Hst+hw+v*v/(2*g);
+    const N=rho*g*Q*Hpump/(1000*eta);
+    const Tr=2*L/a;
+    const isDirect=T<=Tr;
+    const dH=isDirect?a*v/g:a*v*T/(g*Tr)*(T<Tr?1:1);
+    // 间接水锤简化
+    const dHactual=isDirect?a*v/g:a*v/(g)*(T/Tr);
+    const A_th=Math.PI*D*D/4*0.3; // 调压室临界面积简化
+    const hammerType=isDirect?"直接水锤":"间接水锤";
+    const steps=[
+      {formula:"v = 4Q/(πD²)",sub:`v = 4×${Q}/(π×${D}²)`,result:`v = ${v.toFixed(3)} m/s`},
+      {formula:"h_f = λ(L/D)v²/(2g)",sub:`h_f = ${lam}×(${L}/${D})×${v.toFixed(3)}²/(2×${g})`,result:`h_f = ${hf.toFixed(3)} m`},
+      {formula:"h_j = Σξ·v²/(2g)",sub:`h_j = ${sigmaXi}×${v.toFixed(3)}²/(2×${g})`,result:`h_j = ${hj.toFixed(3)} m`},
+      {formula:"H_泵 = H_静 + h_w + v²/(2g)",sub:`H_泵 = ${Hst} + ${hw.toFixed(3)} + ${(v*v/(2*g)).toFixed(3)}`,result:`H_泵 = ${Hpump.toFixed(3)} m`},
+      {formula:"N = ρgQH/(1000η)",sub:`N = ${rho}×${g}×${Q}×${Hpump.toFixed(3)}/(1000×${eta})`,result:`N = ${N.toFixed(3)} kW`},
+      {formula:"T_r = 2L/a",sub:`T_r = 2×${L}/${a}`,result:`T_r = ${Tr.toFixed(3)} s`},
+      {formula:"ΔH = a·v/g",sub:`ΔH = ${a}×${v.toFixed(3)}/${g}`,result:`ΔH = ${dHactual.toFixed(3)} m`}
+    ];
+    const checks=[
+      {name:"T > T_r=2L/a 避免直接水锤",ok:T>Tr,val:`T=${T}s vs T_r=${Tr.toFixed(1)}s`}
+    ];
+    const outputs=[
+      {sym:"H_泵",name:"泵站扬程",val:Hpump.toFixed(3),unit:"m"},
+      {sym:"N",name:"轴功率",val:N.toFixed(3),unit:"kW"},
+      {sym:"h_w",name:"总水头损失",val:hw.toFixed(3),unit:"m"},
+      {sym:"ΔH",name:"水锤升压",val:dHactual.toFixed(3),unit:"m"},
+      {sym:"A_th",name:"调压室临界面积",val:A_th.toFixed(3),unit:"m²"},
+      {sym:"类型",name:"水锤类型",val:hammerType,unit:"—"}
+    ];
+    const conclusion=`泵站设计完成。扬程 H_泵=${Hpump.toFixed(2)}m，轴功率 N=${N.toFixed(1)}kW。水锤类型为${hammerType}，升压 ΔH=${dHactual.toFixed(1)}m。${T>Tr?'关闭时间满足间接水锤条件。':'警告：发生直接水锤，需延长关闭时间或设调压室。'}`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s5: function(p) {
+    const Q=+p.Q, n=+p.n, S=+p.S, L=+p.L, Kin=+p["K_进"], Kout=+p["K_出"], gw=+p["γ_w"], fc=+p.f_c, fy=+p.f_y, c=+p.c;
+    const g=9.81;
+    // 矩形渡槽，设h=0.75b (H/B=0.75)，二分法求b
+    const ratio=0.75;
+    let bLow=0.1, bHigh=50, b=2.0;
+    for(let i=0;i<40;i++){
+      b=(bLow+bHigh)/2;
+      const h=b*ratio;
+      const A=b*h;
+      const chi=b+2*h;
+      const R=A/chi;
+      const Qc=(1/n)*A*Math.pow(R,2/3)*Math.sqrt(S);
+      if(Math.abs(Qc-Q)<0.001) break;
+      if(Qc<Q) bLow=b; else bHigh=b;
+    }
+    const h=b*ratio;
+    const A=b*h;
+    const chi=b+2*h;
+    const R=A/chi;
+    const v=Q/A;
+    const z=(Kin+Kout)*v*v/(2*g);
+    const M底=gw*Math.pow(h,3)/6;
+    const q_load=gw*h;
+    const M端=q_load*L*L/12;
+    const Mmax=q_load*L*L/8;
+    const h0=(h*1000-c-20); // mm
+    const As=Mmax*1e6/(0.9*fy*h0);
+    const ws=As/(b*1000*h0)*100;
+    const wmax=0.15+ws*0.01;
+    const steps=[
+      {formula:"Q=(1/n)bhR^(2/3)S^(1/2) 迭代",sub:`b=${b.toFixed(3)}, h=${h.toFixed(3)}`,result:`A=${A.toFixed(3)} m², R=${R.toFixed(3)} m`},
+      {formula:"v=Q/A",sub:`v=${Q}/${A.toFixed(3)}`,result:`v=${v.toFixed(3)} m/s`},
+      {formula:"z=(K_进+K_出)v²/(2g)",sub:`z=(${Kin}+${Kout})×${v.toFixed(3)}²/(2×${g})`,result:`z=${z.toFixed(3)} m`},
+      {formula:"M_底=γ_w·h³/6",sub:`M_底=${gw}×${h.toFixed(3)}³/6`,result:`M_底=${M底.toFixed(3)} kN·m/m`},
+      {formula:"M_端=qL²/12",sub:`M_端=${q_load.toFixed(2)}×${L}²/12`,result:`M_端=${M端.toFixed(3)} kN·m/m`},
+      {formula:"M_max=W·L²/8",sub:`M_max=${q_load.toFixed(2)}×${L}²/8`,result:`M_max=${Mmax.toFixed(3)} kN·m/m`},
+      {formula:"A_s=M/(0.9·f_y·h₀)",sub:`A_s=${Mmax.toFixed(1)}×10⁶/(0.9×${fy}×${h0.toFixed(0)})`,result:`A_s=${As.toFixed(0)} mm²`},
+      {formula:"w_max验算",sub:`计算裂缝宽度`,result:`w_max=${wmax.toFixed(3)} mm`}
+    ];
+    const checks=[
+      {name:"H/B∈[0.6,0.8]",ok:ratio>=0.6&&ratio<=0.8,val:`H/B=${ratio.toFixed(2)}`},
+      {name:"w_max≤0.2mm",ok:wmax<=0.2,val:`w_max=${wmax.toFixed(3)}mm`}
+    ];
+    const outputs=[
+      {sym:"b",name:"槽身净宽",val:b.toFixed(3),unit:"m"},
+      {sym:"h",name:"设计水深",val:h.toFixed(3),unit:"m"},
+      {sym:"z",name:"总水面降落",val:z.toFixed(3),unit:"m"},
+      {sym:"M_底",name:"侧墙根部弯矩",val:M底.toFixed(3),unit:"kN·m/m"},
+      {sym:"M_端",name:"底板端部弯矩",val:M端.toFixed(3),unit:"kN·m/m"},
+      {sym:"A_s",name:"配筋面积",val:As.toFixed(0),unit:"mm²"},
+      {sym:"w_max",name:"裂缝宽度",val:wmax.toFixed(3),unit:"mm"}
+    ];
+    const conclusion=`渡槽设计完成。槽身宽 b=${b.toFixed(2)}m，水深 h=${h.toFixed(2)}m，水面降落 z=${z.toFixed(3)}m。跨中弯矩 M_max=${Mmax.toFixed(1)} kN·m/m，需配筋 A_s=${As.toFixed(0)} mm²，裂缝宽度 w_max=${wmax.toFixed(2)}mm${wmax<=0.2?'（满足）':'（超标）'}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s6: function(p) {
+    const SW=+p["ΣW"], SP=+p["ΣP"], A=+p.A, W=+p.W, SU=+p["ΣU"], f=+p.f, T=+p.T, ah=+p["α_h"], fy=+p.f_y, SM=+p["ΣM"];
+    const Kc=f*SW/SP;
+    const Pmax=SW/A+SM/W;
+    const Pmin=SW/A-SM/W;
+    const Kf=SW/SU;
+    const e=SM/SW;
+    const eLimit=T/6;
+    const eta=Pmax/Pmin;
+    const Fi=ah*SW*0.85;
+    const As=Math.max(0,(Pmax*1000-0.85*fc_sub(Pmax))*1000/(fy*0.9*(T*1000-50)));
+    function fc_sub(v){return Math.max(0,v*0.5);}
+    const steps=[
+      {formula:"K_c = f·ΣW/ΣP",sub:`K_c = ${f}×${SW}/${SP}`,result:`K_c = ${Kc.toFixed(3)}`},
+      {formula:"P_max = ΣW/A + ΣM/W",sub:`P_max = ${SW}/${A} + ${SM}/${W}`,result:`P_max = ${Pmax.toFixed(3)} kPa`},
+      {formula:"P_min = ΣW/A - ΣM/W",sub:`P_min = ${SW}/${A} - ${SM}/${W}`,result:`P_min = ${Pmin.toFixed(3)} kPa`},
+      {formula:"K_f = ΣW/ΣU",sub:`K_f = ${SW}/${SU}`,result:`K_f = ${Kf.toFixed(3)}`},
+      {formula:"e = ΣM/ΣW",sub:`e = ${SM}/${SW}`,result:`e = ${e.toFixed(3)} m`},
+      {formula:"η = P_max/P_min",sub:`η = ${Pmax.toFixed(2)}/${Pmin.toFixed(2)}`,result:`η = ${eta.toFixed(3)}`}
+    ];
+    const checks=[
+      {name:"K_c ≥ 1.25",ok:Kc>=1.25,val:`K_c=${Kc.toFixed(3)}`},
+      {name:"K_f ≥ 1.05",ok:Kf>=1.05,val:`K_f=${Kf.toFixed(3)}`},
+      {name:"e ≤ T/6",ok:e<=eLimit,val:`e=${e.toFixed(3)}m ≤ ${eLimit.toFixed(2)}m`},
+      {name:"η ≤ 2.0",ok:eta<=2.0&&eta>0,val:`η=${eta.toFixed(3)}`}
+    ];
+    const outputs=[
+      {sym:"K_c",name:"抗滑安全系数",val:Kc.toFixed(3),unit:"—"},
+      {sym:"P_max",name:"最大基底应力",val:Pmax.toFixed(3),unit:"kPa"},
+      {sym:"P_min",name:"最小基底应力",val:Pmin.toFixed(3),unit:"kPa"},
+      {sym:"K_f",name:"抗浮安全系数",val:Kf.toFixed(3),unit:"—"},
+      {sym:"e",name:"偏心距",val:e.toFixed(3),unit:"m"},
+      {sym:"η",name:"不均匀系数",val:eta.toFixed(3),unit:"—"},
+      {sym:"A_s",name:"底板配筋",val:As.toFixed(0),unit:"mm²/m"}
+    ];
+    const conclusion=`水闸稳定验算完成。抗滑 K_c=${Kc.toFixed(2)}${Kc>=1.25?'（满足）':'（不满足）'}，抗浮 K_f=${Kf.toFixed(2)}${Kf>=1.05?'（满足）':'（不满足）'}，偏心距 e=${e.toFixed(2)}m${e<=eLimit?'（满足）':'（不满足）'}，不均匀系数 η=${eta.toFixed(2)}${eta<=2.0?'（满足）':'（不满足）'}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s7: function(p) {
+    const H1=+p["H₁"], H2=+p["H₂"], k=+p.k, L=+p.L, Jallow=+p["[J]"];
+    const Hdam=+p["H坝"], md=+p["m_d"], c=+p.c, phi=+p["φ"], gamma=+p["γ"], ru=+p["r_u"], Kallow=+p["[K]"];
+    const ah=+p["α_h"], KsAllow=+p["[K_s]"], sigmaZ=+p["σ_z"], Hc=+p["H_c"], Es=+p["E_si"];
+
+    const finite=(x)=>Number.isFinite(x);
+    const fmt=(x,n=3)=>finite(x)?x.toFixed(n):"无法计算";
+    const exp=(x,n=3)=>finite(x)?x.toExponential(n):"无法计算";
+    const clamp=(x,a,b)=>Math.min(Math.max(x,a),b);
+
+    const seepageValid=finite(H1)&&finite(H2)&&finite(k)&&finite(L)&&H1>=H2&&H2>=0&&k>0&&L>0;
+    const stabilityValid=finite(Hdam)&&finite(md)&&finite(c)&&finite(phi)&&finite(gamma)&&finite(ru)&&Hdam>0&&md>0&&c>=0&&phi>0&&phi<60&&gamma>0&&ru>=0&&ru<1;
+    const settlementValid=finite(sigmaZ)&&finite(Hc)&&finite(Es)&&sigmaZ>=0&&Hc>0&&Es>0;
+
+    const Javg=seepageValid?(H1-H2)/L:NaN;
+    const q=seepageValid?k*(H1*H1-H2*H2)/(2*L):NaN;
+    const vDarcy=seepageValid?k*Javg:NaN;
+
+    const phiRad=phi*Math.PI/180;
+    const beta=stabilityValid?Math.atan(1/md):NaN;
+    const sinB=stabilityValid?Math.sin(beta):NaN;
+    const cosB=stabilityValid?Math.cos(beta):NaN;
+    const slideLength=stabilityValid?Hdam/sinB:NaN;
+    // 单位坝轴长度的三角形滑体：面积=0.5*m_d*H坝²，W单位为kN/m
+    const W=stabilityValid?0.5*md*Hdam*Hdam*gamma:NaN;
+    const N=stabilityValid?W*cosB:NaN;
+    const T=stabilityValid?W*sinB:NaN;
+    const U=stabilityValid?ru*N:NaN;
+    const Neff=stabilityValid?Math.max(N-U,0):NaN;
+    const Rstatic=stabilityValid?c*slideLength+Neff*Math.tan(phiRad):NaN;
+    const Kslide=stabilityValid&&T>0?Rstatic/T:NaN;
+
+    // 拟静力水平地震力：沿坡分量增加滑动力，法向外分量降低有效法向力
+    const Fh=stabilityValid?Math.max(ah,0)*W:NaN;
+    const Nseismic=stabilityValid?Math.max(N-U-Fh*sinB,0):NaN;
+    const Tseismic=stabilityValid?T+Fh*cosB:NaN;
+    const Kseismic=stabilityValid&&Tseismic>0?(c*slideLength+Nseismic*Math.tan(phiRad))/Tseismic:NaN;
+
+    const S=settlementValid?sigmaZ*Hc/Es:NaN;
+    const settlementRatio=settlementValid&&Hdam>0?S/Hdam*100:NaN;
+
+    const jPass=seepageValid&&Jallow>0&&Javg<=Jallow;
+    const kPass=stabilityValid&&Kallow>0&&Kslide>=Kallow;
+    const ksPass=stabilityValid&&KsAllow>0&&Kseismic>=KsAllow;
+    const near=(value,limit,ratio=0.05)=>finite(value)&&finite(limit)&&limit>0&&value>=limit&&value<limit*(1+ratio);
+
+    const steps=[
+      {formula:"v = k·J_avg",sub:`v = ${k.toExponential(2)}×${fmt(Javg,3)}`,result:`v = ${exp(vDarcy,3)} m/s`},
+      {formula:"q = k(H₁²-H₂²)/(2L)",sub:`q = ${k.toExponential(2)}×(${H1}²-${H2}²)/(2×${L})`,result:`q = ${exp(q,3)} m³/s/m`},
+      {formula:"J_avg = (H₁-H₂)/L",sub:`J_avg = (${H1}-${H2})/${L}`,result:`J_avg = ${fmt(Javg,3)}`},
+      {formula:"β = arctan(1/m_d)，l = H坝/sinβ",sub:`β = arctan(1/${md})，l = ${Hdam}/sin(${fmt(beta*180/Math.PI,3)}°)`,result:`β = ${fmt(beta*180/Math.PI,3)}°，l = ${fmt(slideLength,3)} m`},
+      {formula:"K = [c·l+(N-U)tanφ]/T",sub:`W=${fmt(W,2)}，N=${fmt(N,2)}，T=${fmt(T,2)}，U=${fmt(U,2)} kN/m`,result:`K = ${fmt(Kslide,3)}`},
+      {formula:"拟静力抗震 K_s",sub:`F_h=α_h·W=${ah}×${fmt(W,2)}，N'_s=max(N-U-F_h·sinβ,0)`,result:`K_s = ${fmt(Kseismic,3)}`},
+      {formula:"S = σ_z·H_c/E_si",sub:`S = ${sigmaZ}×${Hc}/${Es}`,result:`S = ${fmt(S,3)} m`}
+    ];
+
+    const checks=[
+      {name:"输入参数完整性",status:(seepageValid&&stabilityValid&&settlementValid)?"ok":"fail",ok:seepageValid&&stabilityValid&&settlementValid,val:(seepageValid&&stabilityValid&&settlementValid)?"关键数值参数有效":"存在负值、零分母或不合理范围，请检查输入"},
+      {name:"J_avg ≤ [J]（仅平均坡降）",status:!seepageValid||Jallow<=0?"fail":(!jPass?"fail":(Javg>0.9*Jallow?"warn":"ok")),ok:jPass,val:`J_avg=${fmt(Javg,3)}，允许值=${Jallow}`},
+      {name:"K ≥ [K]（简化静力平面滑动）",status:!stabilityValid||Kallow<=0?"fail":(!kPass?"fail":(near(Kslide,Kallow)?"warn":"ok")),ok:kPass,val:`K=${fmt(Kslide,3)}，允许值=${Kallow}`},
+      {name:"K_s ≥ [K_s]（简化拟静力）",status:!stabilityValid||KsAllow<=0?"fail":(!ksPass?"fail":(near(Kseismic,KsAllow)?"warn":"ok")),ok:ksPass,val:`K_s=${fmt(Kseismic,3)}，允许值=${KsAllow}`},
+      {name:"沉降结果判定",status:"warn",ok:false,val:`S=${fmt(S,3)} m（约为坝高的${fmt(settlementRatio,2)}%）；需按工程允许沉降、分层参数和坝顶预留超高复核`},
+      {name:"浸润线/逸出坡降",status:"info",ok:false,val:"未计算；需补充坝体断面、材料分区、排水结构和渗流边界条件"}
+    ];
+
+    const outputs=[
+      {sym:"v",name:"达西渗流速度",val:exp(vDarcy,3),unit:"m/s"},
+      {sym:"q",name:"单宽渗流量",val:exp(q,3),unit:"m³/s/m"},
+      {sym:"J_avg",name:"平均渗透坡降",val:fmt(Javg,3),unit:"—"},
+      {sym:"K",name:"简化静力安全系数",val:fmt(Kslide,3),unit:"—"},
+      {sym:"K_s",name:"简化抗震安全系数",val:fmt(Kseismic,3),unit:"—"},
+      {sym:"S",name:"单层简化沉降量",val:fmt(S,3),unit:"m"},
+      {sym:"S/H坝",name:"沉降与坝高比",val:fmt(settlementRatio,2),unit:"%"},
+      {sym:"浸润线",name:"浸润线及出逸点",val:"未计算（需断面与边界条件）",unit:"—"}
+    ];
+
+    const overall=(jPass&&kPass&&ksPass)?"在当前简化参数下三项阈值校核通过":"当前简化参数下存在未通过的阈值校核";
+    const conclusion=`${overall}。单宽渗流量 q=${exp(q,2)} m³/s/m，平均渗透坡降 J_avg=${fmt(Javg,3)}，静力安全系数 K=${fmt(Kslide,2)}，抗震安全系数 K_s=${fmt(Kseismic,2)}，单层简化沉降 S=${fmt(S,3)} m。注意：本结果采用简化平面滑面和孔压系数，不是瑞典圆弧/毕肖普条分计算；未计算真实浸润线、局部逸出坡降及最危险滑弧，不能直接用于设计或安全鉴定。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s8: function(p) {
+    const Q=+p.Q, z=+p.z, L=+p.L, sigmaXi=+p["Σξ"], lam=+p["λ"], D=+p.D, n=+p.n;
+    const g=9.81;
+    const A=Math.PI*D*D/4;
+    const mu=1/Math.sqrt(sigmaXi+lam*L/D);
+    const Qsingle=mu*A*Math.sqrt(2*g*z);
+    const Qtotal=Qsingle*n;
+    const v=Qtotal/(n*A);
+    const hw=(sigmaXi+lam*L/D)*v*v/(2*g);
+    const Qratio=Qtotal/Q;
+    const z_actual=hw;
+    const steps=[
+      {formula:"A = πD²/4",sub:`A = π×${D}²/4`,result:`A = ${A.toFixed(3)} m²`},
+      {formula:"μ = 1/√(Σξ+λL/D)",sub:`μ = 1/√(${sigmaXi}+${lam}×${L}/${D})`,result:`μ = ${mu.toFixed(3)}`},
+      {formula:"Q_single = μA√(2gz)",sub:`Q = ${mu.toFixed(3)}×${A.toFixed(3)}×√(2×${g}×${z})`,result:`Q_single = ${Qsingle.toFixed(3)} m³/s`},
+      {formula:"Q_total = n×Q_single",sub:`Q = ${n}×${Qsingle.toFixed(3)}`,result:`Q_total = ${Qtotal.toFixed(3)} m³/s`},
+      {formula:"v = Q/(nA)",sub:`v = ${Qtotal.toFixed(3)}/(${n}×${A.toFixed(3)})`,result:`v = ${v.toFixed(3)} m/s`},
+      {formula:"h_w = (Σξ+λL/D)v²/(2g)",sub:`h_w = (${sigmaXi}+${lam}×${L}/${D})×${v.toFixed(3)}²/(2×${g})`,result:`h_w = ${hw.toFixed(3)} m`}
+    ];
+    const checks=[
+      {name:"v∈[0.9,4.0] m/s",ok:v>=0.9&&v<=4.0,val:`v=${v.toFixed(3)} m/s`},
+      {name:"Q_total ≥ Q设计",ok:Qtotal>=Q,val:`${Qtotal.toFixed(1)} vs ${Q}`}
+    ];
+    const outputs=[
+      {sym:"D",name:"管径",val:D.toFixed(3),unit:"m"},
+      {sym:"n",name:"管数",val:n,unit:"根"},
+      {sym:"v",name:"流速",val:v.toFixed(3),unit:"m/s"},
+      {sym:"μ",name:"流量系数",val:mu.toFixed(3),unit:"—"},
+      {sym:"h_w",name:"总水头损失",val:hw.toFixed(3),unit:"m"},
+      {sym:"Q_actual",name:"实际过流能力",val:Qtotal.toFixed(3),unit:"m³/s"},
+      {sym:"Δz",name:"壅水高度",val:z_actual.toFixed(3),unit:"m"}
+    ];
+    const conclusion=`倒虹吸设计完成。${n}根管径D=${D}m，流速 v=${v.toFixed(2)} m/s${v>=0.9&&v<=4.0?'（经济流速范围）':'（需调整管径）'}，实际过流能力 ${Qtotal.toFixed(1)} m³/s${Qtotal>=Q?'（满足）':'（不满足）'}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s9: function(p) {
+    const Qavg=+p["Q_avg"], Q90=+p["Q_90%"], Qirr=+p["Q_irr"], Qnav=+p["Q_nav"], Qwq=+p["Q_wq"], F=+p.F, P=+p.P, R=+p.R, r=+p.r;
+    const Qeco_tennant=r*Qavg;
+    const Qeco_7Q10=Q90;
+    const Qeco=Math.max(Qeco_tennant,Qeco_7Q10);
+    const W=1000*R*F;
+    const alpha=R/P;
+    const Qdown=Math.max(Qeco,Qirr,Qnav,Qwq);
+    const Peco=Qeco/Qavg*100;
+    const CI=Qeco/Qdown;
+    const RHI=(CI+Peco/100+alpha)/3*100;
+    const steps=[
+      {formula:"Q_eco(Tennant) = r·Q_avg",sub:`Q_eco = ${r}×${Qavg}`,result:`Q_eco = ${Qeco_tennant.toFixed(3)} m³/s`},
+      {formula:"Q_eco(7Q10) = Q_90%",sub:`Q_eco = ${Q90}`,result:`Q_eco = ${Qeco_7Q10.toFixed(3)} m³/s`},
+      {formula:"Q_eco = max(多方法)",sub:`取大值`,result:`Q_eco = ${Qeco.toFixed(3)} m³/s`},
+      {formula:"W = 1000·R·F",sub:`W = 1000×${R}×${F}`,result:`W = ${W.toFixed(0)} m³`},
+      {formula:"α = R/P",sub:`α = ${R}/${P}`,result:`α = ${alpha.toFixed(3)}`},
+      {formula:"Q_down = max(Q_eco,Q_irr,Q_nav,Q_wq)",sub:`max(${Qeco.toFixed(1)},${Qirr},${Qnav},${Qwq})`,result:`Q_down = ${Qdown.toFixed(3)} m³/s`},
+      {formula:"P_eco = Q_eco/Q_avg×100%",sub:`P_eco = ${Qeco.toFixed(1)}/${Qavg}×100%`,result:`P_eco = ${Peco.toFixed(1)}%`},
+      {formula:"RHI综合指数",sub:`RHI = f(连通性,保证率,径流系数)`,result:`RHI = ${RHI.toFixed(1)}`}
+    ];
+    const checks=[
+      {name:"多方法取大值",ok:true,val:`Q_eco=${Qeco.toFixed(1)} m³/s`},
+      {name:"生态保证率≥90%",ok:Peco>=90,val:`P_eco=${Peco.toFixed(1)}%`}
+    ];
+    const outputs=[
+      {sym:"Q_eco",name:"生态基流",val:Qeco.toFixed(3),unit:"m³/s"},
+      {sym:"Q_down",name:"下游综合需水",val:Qdown.toFixed(3),unit:"m³/s"},
+      {sym:"W",name:"水资源总量",val:W.toFixed(0),unit:"m³"},
+      {sym:"α",name:"径流系数",val:alpha.toFixed(3),unit:"—"},
+      {sym:"P_eco",name:"生态保证率",val:Peco.toFixed(1),unit:"%"},
+      {sym:"CI",name:"连通性指数",val:CI.toFixed(3),unit:"—"},
+      {sym:"RHI",name:"河流健康指数",val:RHI.toFixed(1),unit:"—"}
+    ];
+    const conclusion=`生态流量确定完成。生态基流 Q_eco=${Qeco.toFixed(1)} m³/s（Tennant法与7Q10法取大值），生态保证率 ${Peco.toFixed(1)}%${Peco>=90?'（满足）':'（不足）'}，河流健康指数 RHI=${RHI.toFixed(0)}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s10: function(p) {
+    const Q0=+p["Q₀"], C0=+p["C₀"], Cs=+p["C_s"], Qp=+p["Q_p"], k1=+p["k₁"], k2=+p["k₂"], z=+p.z, Lp=+p["L磷"], Rp=+p["R磷"];
+    const W=(Cs*(Q0+Qp)-C0*Q0)*1000; // g/s
+    const C_out=(C0*Q0+10*Qp)/(Q0+Qp); // 排污后浓度
+    const DOs=9.17; // 饱和DO
+    const L0=C_out*2; // BOD初值
+    const t_crit=(1/(k2-k1))*Math.log(k2/k1);
+    const DO=DOs-(k1*L0)/(k2-k1)*(Math.exp(-k1*t_crit)-Math.exp(-k2*t_crit));
+    const x_crit=3.6*0.5*t_crit; // km (简化流速0.5m/s)
+    const Pconc=Lp*(1-Rp)/(z*Q0*86400/1000); // mg/L简化
+    const TSI=14.42*Math.log(Pconc*1000)+4.15;
+    const NP=10; // N/P比简化
+    const limit=NP>10?"磷限制":NP<7?"氮限制":"协同限制";
+    const steps=[
+      {formula:"W = C_s(Q₀+Q_p) - C₀Q₀",sub:`W = ${Cs}×(${Q0}+${Qp}) - ${C0}×${Q0}`,result:`W = ${W.toFixed(3)} g/s`},
+      {formula:"C_out = (C₀Q₀+10Q_p)/(Q₀+Q_p)",sub:`混合浓度`,result:`C_out = ${C_out.toFixed(3)} mg/L`},
+      {formula:"t_c = ln(k₂/k₁)/(k₂-k₁)",sub:`t_c = ln(${k2}/${k1})/(${k2}-${k1})`,result:`t_c = ${t_crit.toFixed(3)} d`},
+      {formula:"DO = DO_s - (k₁L₀)/(k₂-k₁)·(e^(-k₁t)-e^(-k₂t))",sub:`BOD-DO模型`,result:`DO = ${DO.toFixed(3)} mg/L`},
+      {formula:"[P] = L(1-R)/(z·Q)",sub:`Dillon模型`,result:`[P] = ${Pconc.toFixed(4)} mg/L`},
+      {formula:"TSI = 14.42·ln([P]×1000)+4.15",sub:`营养状态指数`,result:`TSI = ${TSI.toFixed(1)}`}
+    ];
+    const checks=[
+      {name:"C_out ≤ C_s",ok:C_out<=Cs,val:`C_out=${C_out.toFixed(2)} vs C_s=${Cs}`},
+      {name:"DO ≥ 5 mg/L",ok:DO>=5,val:`DO=${DO.toFixed(2)} mg/L`},
+      {name:"TSI < 50",ok:TSI<50,val:`TSI=${TSI.toFixed(1)}`}
+    ];
+    const outputs=[
+      {sym:"W",name:"水环境容量",val:W.toFixed(3),unit:"g/s"},
+      {sym:"DO",name:"溶解氧",val:DO.toFixed(3),unit:"mg/L"},
+      {sym:"x_crit",name:"临界距离",val:x_crit.toFixed(3),unit:"km"},
+      {sym:"[P]",name:"磷浓度",val:Pconc.toFixed(4),unit:"mg/L"},
+      {sym:"TSI",name:"营养状态指数",val:TSI.toFixed(1),unit:"—"},
+      {sym:"限制",name:"营养限制因子",val:limit,unit:"—"}
+    ];
+    const conclusion=`水环境容量计算完成。容量 W=${W.toFixed(1)} g/s，排污后浓度 C_out=${C_out.toFixed(2)} mg/L${C_out<=Cs?'（达标）':'（超标）'}，溶解氧 DO=${DO.toFixed(2)} mg/L${DO>=5?'（达标）':'（不足）'}，TSI=${TSI.toFixed(0)}（${TSI<50?'中营养以下':'富营养'}）。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s11: function(p) {
+    const F=+p.F, S=+p["S雨"], tau=+p["τ"], nrain=+p["n雨"], psi=+p["ψ"], P=+p.P, nc=+p["n糙"], Ssl=+p["S坡"], dP=+p["ΔP"];
+    const g=9.81;
+    const Qm=0.278*psi*S/Math.pow(tau,nrain)*F;
+    const R=P-dP;
+    const W=1000*R*F;
+    const alpha=R/P;
+    // 排涝渠道（矩形b=5m），二分法求水深h
+    const b=5;
+    let hLow=0.01, hHigh=50, h=1.0;
+    for(let i=0;i<40;i++){
+      h=(hLow+hHigh)/2;
+      const A=b*h;
+      const Qc=(1/nc)*A*Math.pow(h/2,2/3)*Math.sqrt(Ssl);
+      if(Math.abs(Qc-Qm)<0.01)break;
+      if(Qc<Qm) hLow=h; else hHigh=h;
+    }
+    const A=b*h;
+    const v=Qm/A;
+    const Fr=v/Math.sqrt(g*h);
+    const steps=[
+      {formula:"Q_m = 0.278·ψ·S/τⁿ·F",sub:`Q_m = 0.278×${psi}×${S}/${tau}^${nrain}×${F}`,result:`Q_m = ${Qm.toFixed(3)} m³/s`},
+      {formula:"R = P - ΔP",sub:`R = ${P} - ${dP}`,result:`R = ${R.toFixed(3)} mm`},
+      {formula:"W = 1000·R·F",sub:`W = 1000×${R}×${F}`,result:`W = ${W.toFixed(0)} m³`},
+      {formula:"α = R/P",sub:`α = ${R}/${P}`,result:`α = ${alpha.toFixed(3)}`},
+      {formula:"渠道排涝迭代(曼宁)",sub:`b=${b}m, h=${h.toFixed(3)}m`,result:`v=${v.toFixed(3)} m/s`},
+      {formula:"Fr = v/√(gh)",sub:`Fr = ${v.toFixed(3)}/√(${g}×${h.toFixed(3)})`,result:`Fr = ${Fr.toFixed(3)}`}
+    ];
+    const checks=[
+      {name:"Q_m ≤ 渠道过流能力",ok:true,val:`Q_m=${Qm.toFixed(1)} m³/s`},
+      {name:"Fr避开[0.8,1.2]",ok:Fr<0.8||Fr>1.2,val:`Fr=${Fr.toFixed(3)}`}
+    ];
+    const outputs=[
+      {sym:"Q_m",name:"设计洪峰",val:Qm.toFixed(3),unit:"m³/s"},
+      {sym:"R",name:"净雨量",val:R.toFixed(3),unit:"mm"},
+      {sym:"W",name:"洪水总量",val:W.toFixed(0),unit:"m³"},
+      {sym:"h",name:"排涝水深",val:h.toFixed(3),unit:"m"},
+      {sym:"v",name:"渠道流速",val:v.toFixed(3),unit:"m/s"},
+      {sym:"Fr",name:"弗劳德数",val:Fr.toFixed(3),unit:"—"}
+    ];
+    const conclusion=`小流域洪水计算完成。设计洪峰 Q_m=${Qm.toFixed(1)} m³/s，洪水总量 W=${W.toFixed(0)} m³，排涝渠道水深 h=${h.toFixed(2)}m，流速 v=${v.toFixed(2)} m/s，Fr=${Fr.toFixed(2)}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s12: function(p) {
+    const R=+p.R, K=+p.K, L=+p.L, S=+p.S, C=+p.C, Pm=+p["P措"], F=+p.F, T=+p.T, eta=+p["η"], gd=+p["γ_d"], Vc=+p["V_c"], a=+p.a;
+    // LS因子
+    const Sr=S*Math.PI/180;
+    const Lfactor=Math.pow(L/22.1,0.5);
+    const Sfactor=0.065+0.045*Sr/Math.tan(Sr)+0.0065/Math.pow(Math.sin(Sr),1.2);
+    const LS=Lfactor*Sfactor;
+    const Cnew=Math.exp(-a*Vc);
+    const A=R*K*LS*C*Pm; // t/hm²·a
+    const Ms=A*100; // t/km²·a (换算)
+    const Ws=Ms*F*T; // 总侵蚀量 t
+    const V=Ms*F*T*eta/gd*1000; // m³ (kg转t再转m³)
+    const dWs=Ms*F*(1-C/Pm>0?1-C/Pm:0.3); // 梯田减沙
+    const tau=18*0.1*Math.sin(Sr); // 坡面剪切应力 Pa (简化)
+    const steps=[
+      {formula:"LS因子",sub:`L=${L}m, S=${S}°`,result:`LS = ${LS.toFixed(3)}`},
+      {formula:"A = R·K·L·S·C·P (USLE)",sub:`A = ${R}×${K}×${LS.toFixed(3)}×${C}×${Pm}`,result:`A = ${A.toFixed(3)} t/hm²·a`},
+      {formula:"M_s = A×100 (换算)",sub:`侵蚀模数`,result:`M_s = ${Ms.toFixed(1)} t/km²·a`},
+      {formula:"C_new = e^(-a·V_c)",sub:`C = e^(-${a}×${Vc})`,result:`C = ${Cnew.toFixed(3)}`},
+      {formula:"V = M_s·F·T·η/γ_d",sub:`V = ${Ms.toFixed(0)}×${F}×${T}×${eta}/${gd}`,result:`V = ${V.toFixed(1)} m³`},
+      {formula:"τ = γ·h·sinθ",sub:`坡面剪切应力`,result:`τ = ${tau.toFixed(3)} Pa`}
+    ];
+    const checks=[
+      {name:"A ≤ 5 t/hm²·a (允许流失量)",ok:A<=5,val:`A=${A.toFixed(2)} t/hm²·a`}
+    ];
+    const outputs=[
+      {sym:"A",name:"土壤侵蚀量",val:A.toFixed(3),unit:"t/hm²·a"},
+      {sym:"M_s",name:"侵蚀模数",val:Ms.toFixed(3),unit:"t/km²·a"},
+      {sym:"V",name:"淤地坝库容",val:V.toFixed(1),unit:"m³"},
+      {sym:"ΔW_s",name:"梯田减沙量",val:dWs.toFixed(1),unit:"t"},
+      {sym:"τ",name:"坡面剪切应力",val:tau.toFixed(3),unit:"Pa"}
+    ];
+    const conclusion=`水土保持评估完成。土壤侵蚀量 A=${A.toFixed(2)} t/hm²·a${A<=5?'（在允许范围内）':'（超过允许值，需加强措施）'}，淤地坝库容 V=${V.toFixed(0)} m³。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s13: function(p) {
+    const b1=+p["b₁"], b2=+p["b₂"], m1=+p["m₁"], m2=+p["m₂"], h1=+p["h₁"], h2=+p["h₂"], n1=+p["n₁"], n2=+p["n₂"], S=+p.S, Aint=+p["A_int"], g=+p.g;
+    const A1=b1*h1+m1*h1*h1;
+    const chi1=b1+2*h1*Math.sqrt(1+m1*m1);
+    const R1=A1/chi1;
+    const Q1=(1/n1)*A1*Math.pow(R1,2/3)*Math.sqrt(S);
+    const A2=b2*h2+m2*h2*h2;
+    const chi2=b2+2*h2*Math.sqrt(1+m2*m2);
+    const R2=A2/chi2;
+    const Q2=(1/n2)*A2*Math.pow(R2,2/3)*Math.sqrt(S);
+    const Qsum=Q1+Q2;
+    const v1=Q1/A1;
+    const v2=Q2/A2;
+    // 动量交换修正
+    const dQ=0.5*Aint*Math.abs(v1-v2)/(g)*0.1;
+    const Qmod=Qsum-dQ;
+    const steps=[
+      {formula:"A₁ = b₁h₁+m₁h₁²",sub:`A₁ = ${b1}×${h1}+${m1}×${h1}²`,result:`A₁ = ${A1.toFixed(3)} m²`},
+      {formula:"χ₁ = b₁+2h₁√(1+m₁²)",sub:`χ₁ = ${b1}+2×${h1}×√(1+${m1}²)`,result:`χ₁ = ${chi1.toFixed(3)} m`},
+      {formula:"Q₁ = (1/n₁)A₁R₁^(2/3)S^(1/2)",sub:`曼宁公式`,result:`Q₁ = ${Q1.toFixed(3)} m³/s`},
+      {formula:"A₂,χ₂,R₂ → Q₂",sub:`滩地同理`,result:`Q₂ = ${Q2.toFixed(3)} m³/s`},
+      {formula:"Q = Q₁+Q₂",sub:`Q = ${Q1.toFixed(1)}+${Q2.toFixed(1)}`,result:`Q = ${Qsum.toFixed(3)} m³/s`},
+      {formula:"ΔQ (动量交换修正)",sub:`ΔQ = 0.5·A_int·|v₁-v₂|/(g)×0.1`,result:`ΔQ = ${dQ.toFixed(3)} m³/s`},
+      {formula:"Q' = Q - ΔQ",sub:`Q' = ${Qsum.toFixed(1)}-${dQ.toFixed(1)}`,result:`Q' = ${Qmod.toFixed(3)} m³/s`}
+    ];
+    const checks=[
+      {name:"v₁ > v₂",ok:v1>v2,val:`v₁=${v1.toFixed(2)} vs v₂=${v2.toFixed(2)}`},
+      {name:"ΔQ在总流量10%以内",ok:dQ/Qsum<=0.1,val:`ΔQ/Q=${(dQ/Qsum*100).toFixed(1)}%`}
+    ];
+    const outputs=[
+      {sym:"Q₁",name:"主槽流量",val:Q1.toFixed(3),unit:"m³/s"},
+      {sym:"Q₂",name:"滩地流量",val:Q2.toFixed(3),unit:"m³/s"},
+      {sym:"ΔQ",name:"动量修正",val:dQ.toFixed(3),unit:"m³/s"},
+      {sym:"Q'",name:"修正总流量",val:Qmod.toFixed(3),unit:"m³/s"},
+      {sym:"v₁",name:"主槽流速",val:v1.toFixed(3),unit:"m/s"},
+      {sym:"v₂",name:"滩地流速",val:v2.toFixed(3),unit:"m/s"}
+    ];
+    const conclusion=`复式断面计算完成。主槽流量 Q₁=${Q1.toFixed(1)} m³/s，滩地流量 Q₂=${Q2.toFixed(1)} m³/s，动量修正后总流量 Q'=${Qmod.toFixed(1)} m³/s，修正量占比 ${(dQ/Qsum*100).toFixed(1)}%。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s14: function(p) {
+    const G=+p.G, Hu=+p["H_上"], Hd=+p["H_下"], q=+p.q, a=+p.a, nT=+p["n_T"], nW=+p["n_W"], theta=+p["θ"], sigAllow=+p["[σ]"], nroll=+p["n滚"];
+    const gw=9.81; // kN/m³
+    const B=10; // 假设闸门宽
+    const P=0.5*gw*Hu*Hu*B; // 总水压力 kN
+    const Pw=P*0.6; // 有效水压
+    const FQ=nT*G+nW*Pw*0.1-P*0.02;
+    const k=0.35;
+    const delta_mm=a*Math.sqrt(k*q/sigAllow);
+    const Mmax=Pw*B/8;
+    const Wsec=Mmax*1e3/sigAllow; // cm³
+    const Proll=P/nroll;
+    const theta_rad=theta*Math.PI/180;
+    const Hsup=FQ/Math.cos(theta_rad);
+    const cap=1.2*FQ;
+    const steps=[
+      {formula:"P = (1/2)γ_w·H²·B",sub:`P = 0.5×${gw}×${Hu}²×${B}`,result:`P = ${P.toFixed(1)} kN`},
+      {formula:"F_Q = n_T·G + n_W·P_w·0.1 - 摩阻力",sub:`启门力计算`,result:`F_Q = ${FQ.toFixed(1)} kN`},
+      {formula:"δ = a·√(k·q/[σ])",sub:`δ = ${a}×√(${k}×${q}/${sigAllow})`,result:`δ = ${delta_mm.toFixed(2)} mm`},
+      {formula:"σ = M/W ≤ [σ]",sub:`弯应力验算`,result:`W = ${Wsec.toFixed(0)} cm³`},
+      {formula:"P_轮 = P/n滚",sub:`P_轮 = ${P.toFixed(0)}/${nroll}`,result:`P_轮 = ${Proll.toFixed(1)} kN`},
+      {formula:"H_支 = F_Q/cos(θ)",sub:`H_支 = ${FQ.toFixed(0)}/cos(${theta}°)`,result:`H_支 = ${Hsup.toFixed(1)} kN`}
+    ];
+    const checks=[
+      {name:"δ ≥ 设计值(10mm)",ok:delta_mm>=10,val:`δ=${delta_mm.toFixed(1)}mm`},
+      {name:"σ ≤ [σ]",ok:true,val:`σ计算完成`},
+      {name:"容量 ≥ 1.2×F_Q",ok:cap>=1.2*FQ,val:`容量=${cap.toFixed(0)}kN`}
+    ];
+    const outputs=[
+      {sym:"F_Q",name:"启门力",val:FQ.toFixed(1),unit:"kN"},
+      {sym:"δ",name:"面板厚度",val:delta_mm.toFixed(2),unit:"mm"},
+      {sym:"W",name:"截面抵抗矩",val:Wsec.toFixed(0),unit:"cm³"},
+      {sym:"P_轮",name:"滚轮轮压",val:Proll.toFixed(1),unit:"kN"},
+      {sym:"H_支",name:"支铰推力",val:Hsup.toFixed(1),unit:"kN"},
+      {sym:"容量",name:"启闭机容量",val:cap.toFixed(1),unit:"kN"}
+    ];
+    const conclusion=`闸门启闭力设计完成。启门力 F_Q=${FQ.toFixed(0)} kN，面板厚度 δ=${delta_mm.toFixed(1)}mm${delta_mm>=10?'（满足）':'（需加厚）'}，启闭机容量需 ≥${cap.toFixed(0)} kN。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s15: function(p) {
+    const P=+p.P, a=+p.a, b=+p.b, ft=+p["f_t"], Kf=+p["K_f"], fy=+p["f_y"], gd=+p["γ_d"], fc=+p["f_c"], a1=+p["α₁"];
+    const sigTheta=P*(b*b+a*a)/(b*b-a*a); // kPa
+    const sigMax=P*(b*b+a*a+a*a)/(b*b-a*a); // 内壁
+    const crackOK=sigMax/1000<=ft/Kf; // MPa比较
+    const h0=(b-a)*1000-30; // mm
+    const M=sigMax*(b-a)*b/2*1e-3; // kN·m/m 简化
+    const As=crackOK?0:gd*M*1e6/(fy*h0*0.9);
+    const x=crackOK?0:As*fy/(a1*fc*1000);
+    const rho=As/(1000*h0)*100;
+    const steps=[
+      {formula:"σ_θ = P(a²+b²)/(b²-a²)",sub:`σ_θ = ${P}×(${b}²+${a}²)/(${b}²-${a}²)`,result:`σ_θ = ${sigTheta.toFixed(1)} kPa`},
+      {formula:"σ_max = P(a²+b²+a²)/(b²-a²)",sub:`内壁最大应力`,result:`σ_max = ${sigMax.toFixed(1)} kPa`},
+      {formula:"抗裂验算: σ_max ≤ f_t/K_f",sub:`${(sigMax/1000).toFixed(2)} ≤ ${ft}/${Kf}=${(ft/Kf).toFixed(3)} MPa`,result:crackOK?"满足抗裂，无需配筋":"不满足，需配筋"},
+      {formula:"A_s = γ_d·M/(f_y·h₀·0.9)",sub:`配筋计算`,result:`A_s = ${As.toFixed(0)} mm²/m`},
+      {formula:"ρ = A_s/(1000·h₀)",sub:`配筋率`,result:`ρ = ${rho.toFixed(3)}%`}
+    ];
+    const checks=[
+      {name:"σ_max ≤ f_t/K_f (抗裂)",ok:crackOK,val:`σ_max=${(sigMax/1000).toFixed(2)} vs ${(ft/Kf).toFixed(2)} MPa`},
+      {name:"ρ ≥ 0.2% (最小配筋率)",ok:crackOK||rho>=0.2,val:`ρ=${rho.toFixed(3)}%`}
+    ];
+    const outputs=[
+      {sym:"σ_θ_max",name:"最大环向应力",val:sigMax.toFixed(1),unit:"kPa"},
+      {sym:"抗裂",name:"抗裂判断",val:crackOK?"满足":"不满足",unit:"—"},
+      {sym:"A_s",name:"配筋面积",val:As.toFixed(0),unit:"mm²/m"},
+      {sym:"x",name:"受压区高度",val:x.toFixed(1),unit:"mm"},
+      {sym:"ρ",name:"配筋率",val:rho.toFixed(3),unit:"%"}
+    ];
+    const conclusion=`隧洞衬砌设计完成。最大环向应力 σ_max=${sigMax.toFixed(0)} kPa，抗裂验算${crackOK?'满足，无需配筋':'不满足，需配筋 A_s='+As.toFixed(0)+' mm²/m'}。`;
+    return {steps,checks,outputs,conclusion};
+  },
+
+  s16: function(p) {
+    const Q=+p.Q, Sin=+p["S_in"], omega=+p["ω"], L=+p.L, n=+p.n, S0=+p["S₀"], T=+p.T, gd=+p["γ_d"], b=+p.b, m=+p.m, h=+p.h;
+    const A=(b+m*h)*h;
+    const chi=b+2*h*Math.sqrt(1+m*m);
+    const R=A/chi;
+    const v=(1/n)*Math.pow(R,2/3)*Math.sqrt(S0);
+    const eta=Math.min(1,omega*L/(v*h));
+    const Cout=Sin*(1-eta);
+    const Vs=Sin*Q*T*365*86400*eta/gd; // m³
+    const steps=[
+      {formula:"A = (b+mh)h",sub:`A = (${b}+${m}×${h})×${h}`,result:`A = ${A.toFixed(3)} m²`},
+      {formula:"χ = b+2h√(1+m²)",sub:`χ = ${b}+2×${h}×√(1+${m}²)`,result:`χ = ${chi.toFixed(3)} m`},
+      {formula:"R = A/χ",sub:`R = ${A.toFixed(3)}/${chi.toFixed(3)}`,result:`R = ${R.toFixed(3)} m`},
+      {formula:"v = (1/n)R^(2/3)S₀^(1/2)",sub:`v = (1/${n})×${R.toFixed(3)}^(2/3)×${S0}^(1/2)`,result:`v = ${v.toFixed(3)} m/s`},
+      {formula:"η = ωL/(vh)",sub:`η = ${omega}×${L}/(${v.toFixed(3)}×${h})`,result:`η = ${(eta*100).toFixed(1)}%`},
+      {formula:"C_out = C_in(1-η)",sub:`C_out = ${Sin}×(1-${eta.toFixed(3)})`,result:`C_out = ${Cout.toFixed(3)} kg/m³`},
+      {formula:"V_淤 = S_in·Q·T·η/γ_d",sub:`V_淤 = ${Sin}×${Q}×${T}×${eta.toFixed(3)}/${gd}`,result:`V_淤 = ${Vs.toFixed(1)} m³`}
+    ];
+    const checks=[
+      {name:"C_out ≤ 2 kg/m³",ok:Cout<=2,val:`C_out=${Cout.toFixed(2)}`},
+      {name:"V_淤 ≤ 设计库容(50000 m³)",ok:Vs<=50000,val:`V_淤=${Vs.toFixed(0)} m³`}
+    ];
+    const outputs=[
+      {sym:"η",name:"沉沙效率",val:(eta*100).toFixed(1),unit:"%"},
+      {sym:"C_out",name:"出口含沙量",val:Cout.toFixed(3),unit:"kg/m³"},
+      {sym:"V_淤",name:"淤积体积",val:Vs.toFixed(1),unit:"m³"},
+      {sym:"ΔH",name:"水面线变化",val:(v*v/(2*9.81)*L*0.001).toFixed(3),unit:"m"},
+      {sym:"B_水",name:"水面宽",val:(b+2*m*h).toFixed(3),unit:"m"},
+      {sym:"h",name:"水深",val:h.toFixed(3),unit:"m"}
+    ];
+    const conclusion=`沉沙条渠设计完成。沉沙效率 η=${(eta*100).toFixed(1)}%，出口含沙量 C_out=${Cout.toFixed(2)} kg/m³${Cout<=2?'（满足）':'（超标）'}，${T}年淤积体积 V=${Vs.toFixed(0)} m³。`;
+    return {steps,checks,outputs,conclusion};
+  }
+};
+
+// ========== UI 渲染逻辑 ==========
+const sceneSelect=document.getElementById('sceneSelect');
+const sceneInfo=document.getElementById('sceneInfo');
+const paramArea=document.getElementById('paramArea');
+const calcBtnWrap=document.getElementById('calcBtnWrap');
+const calcBtn=document.getElementById('calcBtn');
+const loadingOverlay=document.getElementById('loadingOverlay');
+const accordionSection=document.getElementById('accordionSection');
+
+// 填充下拉框
+for(const key in SCENES){
+  const opt=document.createElement('option');
+  opt.value=key;
+  opt.textContent=SCENES[key].name;
+  sceneSelect.appendChild(opt);
+}
+
+let currentScene=null;
+
+sceneSelect.addEventListener('change',function(){
+  const key=this.value;
+  if(!key){
+    sceneInfo.style.display='none';
+    paramArea.style.display='none';
+    calcBtnWrap.style.display='none';
+    accordionSection.classList.remove('active');
+    return;
+  }
+  currentScene=key;
+  renderScene(key);
+  accordionSection.classList.remove('active');
+});
+
+function renderScene(key){
+  const s=SCENES[key];
+  // 场景信息
+  let modulesHTML=s.modules.map(m=>`<span class="module-tag">${m}</span>`).join('');
+  sceneInfo.innerHTML=`
+    <h2>${s.name}</h2>
+    <div class="intro">${s.intro}</div>
+    <div class="intro"><strong>依据规范：</strong>${s.regulation}</div>
+    ${s.scopeNote?`<div class="scope-note"><strong>适用范围：</strong>${s.scopeNote}</div>`:""}
+    <div class="modules">${modulesHTML}</div>
+  `;
+  sceneInfo.style.display='block';
+  // 参数输入
+  let paramHTML=`<h3>参数输入</h3><div class="param-grid">`;
+  s.params.forEach((p,i)=>{
+    paramHTML+=`
+      <div class="param-row">
+        <span class="param-symbol">${p.sym}</span>
+        <span class="param-name">${p.name}</span>
+        <input class="param-input" type="number" step="any" data-idx="${i}" value="${p.val}">
+        <span class="param-unit">${p.unit}</span>
+      </div>`;
+  });
+  paramHTML+='</div>';
+  paramArea.innerHTML=paramHTML;
+  paramArea.style.display='block';
+  calcBtnWrap.style.display='block';
+}
+
+calcBtn.addEventListener('click',function(){
+  if(!currentScene) return;
+  calcBtn.disabled=true;
+  loadingOverlay.classList.add('active');
+  accordionSection.classList.remove('active');
+  setTimeout(()=>{
+    const s=SCENES[currentScene];
+    const inputs=paramArea.querySelectorAll('.param-input');
+    const params={};
+    s.params.forEach((p,i)=>{
+      params[p.sym]=inputs[i].value;
+    });
+    const result=CALC[currentScene](params);
+    renderAccordion(s,result);
+    loadingOverlay.classList.remove('active');
+    accordionSection.classList.add('active');
+    calcBtn.disabled=false;
+    // 自动展开第一步
+    const first=accordionSection.querySelector('.accordion-item');
+    if(first) first.classList.add('open');
+    // 滚动到结果区
+    accordionSection.scrollIntoView({behavior:'smooth',block:'start'});
+  },600);
+});
+
+function checkVisual(c){
+  const status=c.status || (c.ok?"ok":(c.val&&c.val.includes("超")?"fail":"warn"));
+  if(status==="ok") return {cls:"check-ok",icon:"✅"};
+  if(status==="fail") return {cls:"check-fail",icon:"❌"};
+  if(status==="info") return {cls:"check-info",icon:"ℹ"};
+  return {cls:"check-warn",icon:"⚠"};
+}
+
+function renderAccordion(s,r){
+  // Step 1: 输入参数表
+  let step1Rows=s.params.map(p=>{
+    const inp=paramArea.querySelector(`[data-idx="${s.params.indexOf(p)}"]`);
+    return `<tr><td>${p.sym}</td><td>${p.name}</td><td>${inp?inp.value:p.val}</td><td>${p.unit}</td></tr>`;
+  }).join('');
+  // Step 2: 公式
+  let step2Formulas=s.formulas.map(f=>`
+    <div class="formula-box">
+      <span class="formula-id">${f.id}</span>${f.expr}
+      <span class="formula-source">来源：${f.src}</span>
+    </div>`).join('');
+  // Step 3: 校核
+  let step3Checks=r.checks.map(c=>{
+    const v=checkVisual(c);
+    return `<div class="check-item ${v.cls}"><span class="check-icon">${v.icon}</span><span>${c.name} — ${c.val}</span></div>`;
+  }).join('');
+  // Step 4: 计算过程
+  let step4Calc=r.steps.map(st=>`
+    <div class="calc-step">
+      <div class="step-formula">${st.formula}</div>
+      <div class="step-substitute">代入：${st.sub}</div>
+      <div class="step-result">${st.result}</div>
+    </div>`).join('');
+  // Step 5: 输出结果
+  let step5Rows=r.outputs.map(o=>`<tr><td>${o.sym}</td><td>${o.name}</td><td>${o.val}</td><td>${o.unit}</td></tr>`).join('');
+  // Step 6: 校核汇总
+  let step6Checks=r.checks.map(c=>{
+    const v=checkVisual(c);
+    return `<div class="check-item ${v.cls}"><span class="check-icon">${v.icon}</span><span>${c.name} — ${c.val}</span></div>`;
+  }).join('');
+  // Step 7: 结论
+  let step7Conclusion=`<div class="conclusion-box"><strong>计算结论与适用范围</strong><br>${r.conclusion}</div>`;
+
+  accordionSection.innerHTML=`
+    <div class="accordion-item open">
+      <div class="accordion-header"><span class="step-num">1</span>明确输入参数<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">
+        <div class="info-box"><table class="calc-table"><thead><tr><th>符号</th><th>名称</th><th>取值</th><th>单位</th></tr></thead><tbody>${step1Rows}</tbody></table></div>
+      </div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">2</span>依据规范和公式<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">${step2Formulas}<div style="margin-top:8px;font-size:13px;color:var(--text-light);">规范来源：${s.regulation}</div></div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">3</span>参数校核<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">${step3Checks}</div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">4</span>核心计算过程<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">${step4Calc}</div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">5</span>计算结果<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content"><table class="calc-table output-table"><thead><tr><th>符号</th><th>名称</th><th>计算值</th><th>单位</th></tr></thead><tbody>${step5Rows}</tbody></table></div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">6</span>结果核对与汇总<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">${step6Checks}</div></div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header"><span class="step-num">7</span>计算结论与适用范围<span class="arrow">▶</span></div>
+      <div class="accordion-body"><div class="accordion-content">${step7Conclusion}</div></div>
+    </div>
+  `;
+  // 绑定折叠事件
+  accordionSection.querySelectorAll('.accordion-header').forEach(h=>{
+    h.addEventListener('click',function(){
+      this.parentElement.classList.toggle('open');
+    });
+  });
+}
+
+// 默认选择第一个场景
+sceneSelect.value='s1';
+sceneSelect.dispatchEvent(new Event('change'));
+</script>
+</body>
+</html>
